@@ -17,7 +17,6 @@
     --sidebar-w: 220px; --font: Georgia,serif; --font-ui: system-ui,sans-serif;
   }
   body { font-family: var(--font-ui); background: var(--bg); color: var(--text); min-height: 100vh; }
-
   #login-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--primary); }
   .login-box { background:var(--surface); border-radius:16px; padding:2.5rem 2rem; width:360px; border:1px solid rgba(232,168,56,0.3); box-shadow:0 20px 60px rgba(0,0,0,0.3); }
   .login-logo { text-align:center; margin-bottom:2rem; }
@@ -33,7 +32,6 @@
   .btn-login:disabled { opacity:0.6; cursor:not-allowed; }
   .login-error { color:var(--danger); font-size:12px; text-align:center; margin-top:10px; padding:8px 12px; background:var(--danger-bg); border-radius:6px; display:none; }
   .login-attempts { font-size:11px; color:var(--warning); text-align:center; margin-top:6px; display:none; }
-
   #app { display:none; min-height:100vh; }
   .sidebar { position:fixed; top:0; left:0; width:var(--sidebar-w); height:100vh; background:var(--primary); z-index:100; display:flex; flex-direction:column; }
   .sidebar-brand { padding:1.5rem 1.25rem; border-bottom:1px solid rgba(255,255,255,0.08); }
@@ -57,12 +55,10 @@
   .rol-gestor { background:rgba(74,144,217,0.15); color:#7ab8f5; }
   .btn-logout { width:100%; padding:7px; background:transparent; border:1px solid rgba(255,255,255,0.15); border-radius:6px; color:rgba(255,255,255,0.5); font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.15s; }
   .btn-logout:hover { background:rgba(255,255,255,0.05); color:white; }
-
   .main { margin-left:var(--sidebar-w); padding:2rem; min-height:100vh; }
   .page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem; }
   .page-title { font-family:var(--font); font-size:22px; font-weight:700; color:var(--primary); }
   .page-subtitle { font-size:13px; color:var(--text2); margin-top:2px; }
-
   .btn { padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; border:none; transition:all 0.15s; }
   .btn-primary { background:var(--primary); color:white; }
   .btn-primary:hover { background:#2d2d4e; }
@@ -75,14 +71,12 @@
   .btn-danger:hover { background:#f5c6c2; }
   .btn-success { background:var(--success-bg); color:var(--success); border:1px solid rgba(45,122,79,0.2); }
   .btn:disabled { opacity:0.5; cursor:not-allowed; }
-
   .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:1.5rem; }
   .stat-card { background:var(--surface); border-radius:12px; padding:1rem 1.25rem; border:1px solid var(--border); }
   .stat-label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px; }
   .stat-value { font-size:26px; font-weight:700; color:var(--primary); font-family:var(--font); }
   .stat-value.accent { color:var(--accent2); }
   .stat-sub { font-size:11px; color:var(--text2); margin-top:4px; }
-
   .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
   .prop-card { background:var(--surface); border-radius:12px; border:1px solid var(--border); overflow:hidden; cursor:pointer; transition:box-shadow 0.15s; }
   .prop-card:hover { box-shadow:0 4px 20px rgba(0,0,0,0.08); }
@@ -103,7 +97,6 @@
   .prop-attrs { display:flex; gap:12px; margin-top:10px; flex-wrap:wrap; }
   .prop-attr { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text2); }
   .prop-price { font-size:15px; font-weight:700; color:var(--primary); }
-
   .table-wrap { background:var(--surface); border-radius:12px; border:1px solid var(--border); overflow:hidden; overflow-x:auto; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   thead th { background:var(--surface2); padding:10px 14px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text2); font-weight:600; border-bottom:1px solid var(--border); white-space:nowrap; }
@@ -113,7 +106,6 @@
   .empty-state { text-align:center; padding:3rem 1rem; color:var(--text2); }
   .empty-state i { font-size:48px; opacity:0.3; display:block; margin-bottom:1rem; }
   .empty-state p { font-size:14px; }
-
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; display:none; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(2px); }
   .modal-overlay.open { display:flex; }
   .modal { background:var(--surface); border-radius:16px; width:100%; max-width:580px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.2); }
@@ -123,7 +115,6 @@
   .modal-footer { padding:1rem 1.5rem; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; }
   .btn-close { background:none; border:none; cursor:pointer; color:var(--text2); font-size:20px; display:flex; align-items:center; padding:4px; border-radius:6px; }
   .btn-close:hover { background:var(--surface2); }
-
   .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
   .form-group { display:flex; flex-direction:column; gap:5px; }
   .form-group.span-2 { grid-column:1/-1; }
@@ -135,17 +126,14 @@
   .checkbox-row { display:flex; align-items:center; gap:8px; }
   .checkbox-row input[type=checkbox] { width:16px; height:16px; cursor:pointer; }
   .checkbox-row label { font-size:13px; color:var(--text); cursor:pointer; }
-
   .alert { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:1rem; display:flex; align-items:center; gap:8px; }
   .alert-warning { background:var(--warning-bg); color:var(--warning); border:1px solid rgba(160,92,0,0.2); }
   .alert-danger { background:var(--danger-bg); color:var(--danger); border:1px solid rgba(192,57,43,0.2); }
   .alert-success { background:var(--success-bg); color:var(--success); border:1px solid rgba(45,122,79,0.2); }
   .alert-info { background:#e8f0fe; color:#1a56a0; border:1px solid rgba(26,86,160,0.2); }
-
   .filters { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:1.25rem; }
   .filter-input { padding:7px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); outline:none; }
   .filter-input:focus { border-color:var(--accent2); }
-
   .toast { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--primary); color:white; padding:12px 20px; border-radius:10px; font-size:13px; font-weight:600; z-index:9999; opacity:0; transition:opacity 0.3s; pointer-events:none; max-width:340px; box-shadow:0 4px 20px rgba(0,0,0,0.25); }
   .toast.show { opacity:1; }
   .section { display:none; }
@@ -158,7 +146,6 @@
   .chip-gray { background:var(--surface2); color:var(--text2); border:1px solid var(--border); }
   .chip-purple { background:#f3e8fd; color:#6b1fa0; }
   .chip-gold { background:rgba(232,168,56,0.2); color:#8c6200; }
-
   .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
   .detail-card { background:var(--surface2); border-radius:10px; padding:1rem; }
   .detail-card h4 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text2); margin-bottom:10px; }
@@ -166,7 +153,6 @@
   .detail-row:last-child { border-bottom:none; }
   .detail-label { color:var(--text2); }
   .detail-val { font-weight:600; color:var(--text); text-align:right; }
-
   .grup-card { background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:1.25rem; transition:box-shadow 0.15s; }
   .grup-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.07); }
   .grup-card-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:0.75rem; gap:1rem; }
@@ -175,39 +161,38 @@
   .grup-card-stats { display:flex; gap:12px; margin:0.75rem 0; flex-wrap:wrap; }
   .grup-stat { font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; }
   .grup-card-footer { display:flex; gap:6px; flex-wrap:wrap; border-top:1px solid var(--border); padding-top:0.75rem; margin-top:0.75rem; }
-
   .user-card { background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:1.25rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
   .user-avatar { width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:white; flex-shrink:0; }
   .user-card-info { flex:1; min-width:140px; }
   .user-card-info h4 { font-size:14px; font-weight:600; margin-bottom:2px; }
   .user-card-info p { font-size:12px; color:var(--text2); }
   .user-actions { display:flex; gap:6px; flex-wrap:wrap; }
-
   .assign-list { display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto; }
   .assign-item { display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--surface2); border-radius:8px; border:1px solid var(--border); cursor:pointer; transition:border 0.15s; }
   .assign-item:hover { border-color:var(--accent2); }
   .assign-item label { font-size:13px; color:var(--text); cursor:pointer; flex:1; }
   .assign-item input[type=checkbox] { width:16px; height:16px; cursor:pointer; flex-shrink:0; }
-
   .loading-screen { position:fixed; inset:0; background:var(--primary); z-index:9998; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:1rem; }
   .loading-screen p { color:rgba(255,255,255,0.6); font-size:14px; }
   .spinner { width:36px; height:36px; border:3px solid rgba(255,255,255,0.15); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
   .btn-spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.8s linear infinite; display:inline-block; }
   @keyframes spin { to { transform:rotate(360deg); } }
-
-  /* Honeypot - camp ocult per bots */
   .hp-field { position:absolute; left:-9999px; opacity:0; height:0; overflow:hidden; }
+  .desp-comunitat { background:#e8f0fe; color:#1a56a0; }
+  .desp-ibi { background:#fff3dc; color:#8c5200; }
+  .desp-escombraries { background:#e8f5ed; color:#1a6e3a; }
+  .desp-reparacio { background:var(--danger-bg); color:var(--danger); }
+  .desp-manteniment { background:#f3e8fd; color:#6b1fa0; }
+  .desp-altres { background:var(--surface2); color:var(--text2); }
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
 <div class="loading-screen" id="loading-screen">
   <div class="spinner"></div>
   <p>Carregant GestImmob...</p>
 </div>
 
-<!-- LOGIN -->
 <div id="login-screen" style="display:none">
   <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--primary)">
   <div class="login-box">
@@ -215,7 +200,6 @@
       <h1>Gest<span>Immob</span></h1>
       <p>Administració de propietats immobiliàries</p>
     </div>
-    <!-- Honeypot per bots -->
     <div class="hp-field" aria-hidden="true">
       <input type="text" id="hp-name" name="name" tabindex="-1" autocomplete="off">
       <input type="email" id="hp-email-fake" name="email_address" tabindex="-1" autocomplete="off">
@@ -229,7 +213,6 @@
   </div>
 </div>
 
-<!-- APP -->
 <div id="app" style="display:none">
   <aside class="sidebar">
     <div class="sidebar-brand">
@@ -243,6 +226,7 @@
       <div class="nav-item" onclick="showSection('propietats',this)"><i class="ti ti-building"></i> Propietats</div>
       <div class="nav-item" onclick="showSection('contractes',this)"><i class="ti ti-file-text"></i> Contractes</div>
       <div class="nav-item" onclick="showSection('llogaters',this)"><i class="ti ti-users"></i> Llogaters</div>
+      <div class="nav-item" onclick="showSection('despeses',this)"><i class="ti ti-receipt"></i> Despeses</div>
       <div class="nav-item" onclick="showSection('pagaments',this)"><i class="ti ti-coin"></i> Pagaments</div>
       <div class="nav-section">Sistema</div>
       <div class="nav-item" onclick="showSection('alertes',this)">
@@ -271,7 +255,6 @@
         <div><div class="page-title">Dashboard</div><div class="page-subtitle" id="dash-date"></div></div>
         <button class="btn btn-ghost" onclick="loadAll()"><i class="ti ti-refresh"></i> Actualitzar</button>
       </div>
-      <div id="dash-grup-info" style="display:none;margin-bottom:1rem"></div>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">Total propietats</div><div class="stat-value" id="st-total">—</div></div>
         <div class="stat-card"><div class="stat-label">Llogades</div><div class="stat-value accent" id="st-llogades">—</div></div>
@@ -289,7 +272,7 @@
     <!-- PROPIETATS -->
     <div id="sec-propietats" class="section">
       <div class="page-header">
-        <div><div class="page-title">Propietats</div><div class="page-subtitle" id="prop-subtitle">Gestió del parc immobiliari</div></div>
+        <div><div class="page-title">Propietats</div><div class="page-subtitle">Gestió del parc immobiliari</div></div>
         <button class="btn btn-primary" id="btn-nova-prop" style="display:none" onclick="openPropModal()"><i class="ti ti-plus"></i> Nova propietat</button>
       </div>
       <div class="filters">
@@ -343,12 +326,58 @@
       </div>
     </div>
 
+    <!-- DESPESES -->
+    <div id="sec-despeses" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Despeses</div><div class="page-subtitle">Comunitat, IBI, reparacions i altres despeses per propietat</div></div>
+        <button class="btn btn-primary" id="btn-nova-despesa" style="display:none" onclick="openDespesaModal()"><i class="ti ti-plus"></i> Nova despesa</button>
+      </div>
+      <div class="filters">
+        <select class="filter-input" id="desp-propietat" onchange="renderDespeses()">
+          <option value="">Totes les propietats</option>
+        </select>
+        <select class="filter-input" id="desp-tipus" onchange="renderDespeses()">
+          <option value="">Tots els tipus</option>
+          <option value="comunitat">Comunitat</option>
+          <option value="ibi">IBI</option>
+          <option value="escombraries">Escombraries</option>
+          <option value="reparacio">Reparació</option>
+          <option value="manteniment">Manteniment</option>
+          <option value="altres">Altres</option>
+        </select>
+        <select class="filter-input" id="desp-imputat" onchange="renderDespeses()">
+          <option value="">Llogater i propietari</option>
+          <option value="llogater">Llogater</option>
+          <option value="propietari">Propietari</option>
+        </select>
+        <select class="filter-input" id="desp-estat" onchange="renderDespeses()">
+          <option value="">Totes</option>
+          <option value="true">Pagades</option>
+          <option value="false">Pendents</option>
+        </select>
+      </div>
+      <div class="stats-grid" style="margin-bottom:1rem">
+        <div class="stat-card"><div class="stat-label">Total despeses</div><div class="stat-value" id="desp-st-total">—</div></div>
+        <div class="stat-card"><div class="stat-label">Pendents</div><div class="stat-value" id="desp-st-pendents" style="color:var(--danger)">—</div></div>
+        <div class="stat-card"><div class="stat-label">A càrrec llogater</div><div class="stat-value accent" id="desp-st-llogater">—</div></div>
+        <div class="stat-card"><div class="stat-label">A càrrec propietari</div><div class="stat-value" id="desp-st-propietari">—</div></div>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Propietat</th><th>Tipus</th><th>Descripció</th><th>Imputat a</th><th>Import</th><th>Data</th><th>Estat</th><th id="th-desp-acc"></th></tr></thead>
+        <tbody id="desp-tbody"></tbody></table>
+      </div>
+    </div>
+
     <!-- PAGAMENTS -->
     <div id="sec-pagaments" class="section">
       <div class="page-header">
-        <div><div class="page-title">Pagaments</div><div class="page-subtitle">Control de pagaments mensuals</div></div>
-        <button class="btn btn-primary" id="btn-nou-pag" style="display:none" onclick="openPagamentModal()"><i class="ti ti-plus"></i> Nou pagament</button>
+        <div><div class="page-title">Pagaments</div><div class="page-subtitle">Control de pagaments mensuals de lloguer</div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" id="btn-gen-pagaments" onclick="generarPagamentsManual()"><i class="ti ti-refresh-dot"></i> Generar pagaments del mes</button>
+          <button class="btn btn-primary" id="btn-nou-pag" style="display:none" onclick="openPagamentModal()"><i class="ti ti-plus"></i> Nou pagament</button>
+        </div>
       </div>
+      <div id="pag-auto-info"></div>
       <div class="filters">
         <select class="filter-input" id="pag-any" onchange="renderPagaments()"></select>
         <select class="filter-input" id="pag-mes" onchange="renderPagaments()">
@@ -397,7 +426,6 @@
   </main>
 </div>
 
-<!-- MODALS PROPIETAT / LLOGATER / CONTRACTE / PAGAMENT / DETALL (idèntics a v2) -->
 <!-- MODAL PROPIETAT -->
 <div class="modal-overlay" id="prop-modal">
   <div class="modal">
@@ -454,7 +482,7 @@
   </div>
 </div>
 
-<!-- MODAL CONTRACTE -->
+<!-- MODAL CONTRACTE (sense IBI ni Comunitat, ara a Despeses) -->
 <div class="modal-overlay" id="cont-modal">
   <div class="modal">
     <div class="modal-header"><h3 id="cont-modal-title">Nou contracte</h3><button class="btn-close" onclick="closeModal('cont-modal')"><i class="ti ti-x"></i></button></div>
@@ -466,19 +494,56 @@
         <div class="form-group"><label>Actiu</label><select id="c-actiu"><option value="true">Sí</option><option value="false">No</option></select></div>
         <div class="form-group"><label>Data inici *</label><input type="date" id="c-inici"></div>
         <div class="form-group"><label>Data fi *</label><input type="date" id="c-fi"></div>
-        <div class="form-section">Preus i despeses</div>
+        <div class="form-section">Preu i despeses</div>
         <div class="form-group"><label>Preu mensual (€) *</label><input type="number" id="c-preu"></div>
         <div class="form-group"><label>Fiança (€)</label><input type="number" id="c-fianca"></div>
         <div class="form-group"><label>IVA (%)</label><input type="number" id="c-iva" value="0"></div>
-        <div class="form-group"><label>IBI anual (€)</label><input type="number" id="c-ibi"></div>
-        <div class="form-group"><label>Comunitat/mes (€)</label><input type="number" id="c-comunitat"></div>
-        <div class="form-group"><label>Altres despeses (€)</label><input type="number" id="c-altres"></div>
+        <div class="form-group"><label>Altres despeses recurrents (€)</label><input type="number" id="c-altres"></div>
+        <div class="alert alert-info span-2" style="grid-column:1/-1"><i class="ti ti-info-circle"></i> L'IBI i la Comunitat ara es gestionen des de l'apartat <strong>Despeses</strong>, associades directament a la propietat.</div>
         <div class="form-group span-2"><label>Notes</label><textarea id="c-notes"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('cont-modal')">Cancel·lar</button>
       <button class="btn btn-primary" onclick="saveContracte()"><i class="ti ti-device-floppy"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DESPESA -->
+<div class="modal-overlay" id="despesa-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><h3 id="despesa-modal-title">Nova despesa</h3><button class="btn-close" onclick="closeModal('despesa-modal')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-group"><label>Propietat *</label><select id="d-propietat" onchange="onDespesaPropietatChange()"></select></div>
+        <div class="form-group"><label>Tipus de despesa *</label>
+          <select id="d-tipus">
+            <option value="comunitat">Comunitat</option>
+            <option value="ibi">IBI</option>
+            <option value="escombraries">Escombraries</option>
+            <option value="reparacio">Reparació</option>
+            <option value="manteniment">Manteniment</option>
+            <option value="altres">Altres</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Imputat a *</label>
+          <select id="d-imputat">
+            <option value="propietari">Propietari</option>
+            <option value="llogater">Llogater</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Descripció</label><input type="text" id="d-desc" placeholder="Ex: Quota comunitat 1r trimestre"></div>
+        <div class="form-group"><label>Import (€) *</label><input type="number" id="d-import" placeholder="0.00"></div>
+        <div class="form-group"><label>Data de la despesa *</label><input type="date" id="d-data"></div>
+        <div class="form-group"><label>Estat</label>
+          <select id="d-pagat"><option value="false">Pendent</option><option value="true">Pagada</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('despesa-modal')">Cancel·lar</button>
+      <button class="btn btn-primary" onclick="saveDespesa()"><i class="ti ti-device-floppy"></i> Guardar</button>
     </div>
   </div>
 </div>
@@ -609,12 +674,10 @@ const MESOS = ['','Gener','Febrer','Març','Abril','Maig','Juny','Juliol','Agost
 
 // ─── ESTAT ────────────────────────────────────────────────────
 let accessToken = null, currentUser = null, currentPerfil = null;
-let propietats = [], llogaters = [], contractes = [], pagaments = [];
+let propietats = [], llogaters = [], contractes = [], pagaments = [], despeses = [];
 let grups = [], usuaris = [], grupUsuaris = [], grupPropietats = [];
-let editingProp = null, editingLlog = null, editingCont = null, editingGrup = null;
-let activeGrupId = null; // grup actiu per a admin_grup
+let editingProp = null, editingLlog = null, editingCont = null, editingGrup = null, editingDespesa = null;
 
-// ─── RATE LIMITING LOGIN ──────────────────────────────────────
 const loginAttempts = { count: 0, blockedUntil: 0 };
 
 // ─── HEADERS ──────────────────────────────────────────────────
@@ -688,17 +751,23 @@ function rolLabel(rol) {
 function rolChipClass(rol) {
   return {superadmin:'chip-gold',admin:'chip-amber',admin_grup:'chip-blue',gestor:'chip-gray'}[rol]||'chip-gray';
 }
+function despesaBadge(t) {
+  const labels={comunitat:'Comunitat',ibi:'IBI',escombraries:'Escombraries',reparacio:'Reparació',manteniment:'Manteniment',altres:'Altres'};
+  return `<span class="despesa-tipus-badge desp-${t}">${labels[t]||t}</span>`;
+}
 
 function applyRolUI() {
   const sa = isSuperadmin(), admin = isAdminOrSuperadmin(), edit = canEdit();
   document.getElementById('nav-grups').style.display = (sa||edit) ? 'flex' : 'none';
   document.getElementById('nav-usuaris').style.display = (sa||admin) ? 'flex' : 'none';
   document.getElementById('btn-nou-grup').style.display = sa ? '' : 'none';
-  ['btn-nova-prop','btn-nou-cont','btn-nou-llog','btn-nou-pag'].forEach(id => {
+  ['btn-nova-prop','btn-nou-cont','btn-nou-llog','btn-nou-pag','btn-nova-despesa'].forEach(id => {
     const el=document.getElementById(id); if(el) el.style.display = edit ? '' : 'none';
   });
   const thC=document.getElementById('th-cont-acc'); if(thC) thC.textContent = edit ? 'Accions' : '';
   const thL=document.getElementById('th-llog-acc'); if(thL) thL.textContent = edit ? 'Accions' : '';
+  const thD=document.getElementById('th-desp-acc'); if(thD) thD.textContent = edit ? 'Accions' : '';
+  document.getElementById('btn-gen-pagaments').style.display = edit ? '' : 'none';
   if (currentPerfil) {
     document.getElementById('sidebar-nom').textContent = currentPerfil.nom || currentUser.email;
     document.getElementById('sidebar-rol').innerHTML = `<span class="rol-badge rol-${currentPerfil.rol}">${rolLabel(currentPerfil.rol)}</span>`;
@@ -707,13 +776,12 @@ function applyRolUI() {
   }
 }
 
-// ─── PROTECCIÓ BOTS (Honeypot + Rate Limiting) ────────────────
+// ─── PROTECCIÓ BOTS ───────────────────────────────────────────
 function checkHoneypot() {
   const hp1 = document.getElementById('hp-name').value;
   const hp2 = document.getElementById('hp-email-fake').value;
   return hp1 !== '' || hp2 !== '';
 }
-
 function checkRateLimit() {
   if (loginAttempts.blockedUntil > Date.now()) {
     const secs = Math.ceil((loginAttempts.blockedUntil - Date.now()) / 1000);
@@ -722,18 +790,13 @@ function checkRateLimit() {
   }
   return true;
 }
-
 function registerFailedAttempt() {
   loginAttempts.count++;
   const attEl = document.getElementById('login-attempts');
-  if (loginAttempts.count >= 3) {
-    attEl.textContent = `Intents fallits: ${loginAttempts.count}/5`;
-    attEl.style.display = 'block';
-  }
+  if (loginAttempts.count >= 3) { attEl.textContent = `Intents fallits: ${loginAttempts.count}/5`; attEl.style.display = 'block'; }
   if (loginAttempts.count >= 5) {
     loginAttempts.blockedUntil = Date.now() + 15 * 60 * 1000;
-    loginAttempts.count = 0;
-    attEl.style.display = 'none';
+    loginAttempts.count = 0; attEl.style.display = 'none';
     showToast('Compte bloquejat durant 15 minuts per seguretat.', true);
   }
 }
@@ -772,7 +835,7 @@ document.getElementById('login-email').addEventListener('keydown', e => { if(e.k
 async function doLogout() {
   try { await fetch(AUTH+'/logout',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+accessToken}}); } catch(e){}
   clearSession(); accessToken=null; currentUser=null; currentPerfil=null;
-  propietats=[]; llogaters=[]; contractes=[]; pagaments=[]; grups=[]; usuaris=[];
+  propietats=[]; llogaters=[]; contractes=[]; pagaments=[]; despeses=[]; grups=[]; usuaris=[];
   document.getElementById('app').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   const btn=document.getElementById('btn-login'); btn.disabled=false; btn.textContent='Iniciar sessió';
@@ -789,6 +852,7 @@ async function initApp() {
     document.getElementById('app').style.display='block';
     applyRolUI();
     await loadAll();
+    checkAutoGenerarPagaments();
   } catch(e) {
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('app').style.display='none';
@@ -810,12 +874,12 @@ window.addEventListener('DOMContentLoaded', async () => {
 // ─── LOAD ALL ─────────────────────────────────────────────────
 async function loadAll() {
   try {
-    const promises = [sbGet('propietats'), sbGet('llogaters'), sbGet('contractes'), sbGet('pagaments')];
+    const promises = [sbGet('propietats'), sbGet('llogaters'), sbGet('contractes'), sbGet('pagaments'), sbGet('despeses')];
     if (isSuperadmin() || isAdminOrSuperadmin()) promises.push(sbGet('grups'));
     const results = await Promise.all(promises);
-    propietats=results[0]; llogaters=results[1]; contractes=results[2]; pagaments=results[3];
-    if (results[4]) grups=results[4];
-    initPagamentFilters(); loadDashboard();
+    propietats=results[0]; llogaters=results[1]; contractes=results[2]; pagaments=results[3]; despeses=results[4];
+    if (results[5]) grups=results[5];
+    initPagamentFilters(); initDespesaFilters(); loadDashboard();
   } catch(e) { showToast('Error carregant dades: '+e.message,true); }
 }
 
@@ -825,7 +889,7 @@ function showSection(id, el) {
   document.getElementById('sec-'+id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if (el) el.classList.add('active');
-  ({dashboard:loadDashboard,propietats:renderPropietats,contractes:renderContractes,llogaters:renderLlogaters,pagaments:renderPagaments,alertes:renderAlertes,grups:loadGrups,usuaris:loadUsuaris})[id]?.();
+  ({dashboard:loadDashboard,propietats:renderPropietats,contractes:renderContractes,llogaters:renderLlogaters,despeses:renderDespeses,pagaments:renderPagaments,alertes:renderAlertes,grups:loadGrups,usuaris:loadUsuaris})[id]?.();
 }
 
 // ─── ALERTES ──────────────────────────────────────────────────
@@ -841,7 +905,9 @@ function getAlertes() {
     else if(dies<=90) al.push({type:'warning',msg:`Contracte venç aviat (${dies} dies): ${addr}`});
   });
   const pend=pagaments.filter(p=>!p.pagat).length;
-  if(pend) al.push({type:'warning',msg:`${pend} pagament(s) pendent(s) de confirmar`});
+  if(pend) al.push({type:'warning',msg:`${pend} pagament(s) de lloguer pendent(s)`});
+  const pendDesp=despeses.filter(d=>!d.pagat).length;
+  if(pendDesp) al.push({type:'warning',msg:`${pendDesp} despesa(es) pendent(s) de pagament`});
   return al;
 }
 function renderAlertes() {
@@ -917,6 +983,7 @@ function showPropDetail(id) {
   const p=propietats.find(x=>x.id===id); if(!p) return;
   const c=contractes.find(x=>x.propietat_id===id&&x.actiu);
   const llog=c?llogaters.find(l=>l.id===c.llogater_id):null;
+  const despProp=despeses.filter(d=>d.propietat_id===id).slice(0,5);
   document.getElementById('detail-title').textContent=p.adreca;
   document.getElementById('detail-body').innerHTML=`
     <div class="detail-grid">
@@ -941,8 +1008,7 @@ function showPropDetail(id) {
           <div class="detail-row"><span class="detail-label">Inici</span><span class="detail-val">${formatDate(c.data_inici)}</span></div>
           <div class="detail-row"><span class="detail-label">Fi</span><span class="detail-val">${formatDate(c.data_fi)}</span></div>
           <div class="detail-row"><span class="detail-label">Preu/mes</span><span class="detail-val">${Number(c.preu_mensual).toLocaleString('ca-ES')} €</span></div>
-          <div class="detail-row"><span class="detail-label">Fiança</span><span class="detail-val">${c.fiança?Number(c.fiança).toLocaleString('ca-ES')+' €':'—'}</span></div>
-          <div class="detail-row"><span class="detail-label">IBI anual</span><span class="detail-val">${c.ibi?Number(c.ibi).toLocaleString('ca-ES')+' €':'—'}</span></div>`
+          <div class="detail-row"><span class="detail-label">Fiança</span><span class="detail-val">${c.fiança?Number(c.fiança).toLocaleString('ca-ES')+' €':'—'}</span></div>`
         :'<p style="color:var(--text2);font-size:13px">Sense contracte actiu</p>'}
       </div>
       <div class="detail-card"><h4>Llogater</h4>
@@ -952,6 +1018,9 @@ function showPropDetail(id) {
           <div class="detail-row"><span class="detail-label">Telèfon</span><span class="detail-val">${llog.telefon||'—'}</span></div>`
         :'<p style="color:var(--text2);font-size:13px">Sense llogater associat</p>'}
       </div>
+    </div>
+    <div class="detail-card" style="margin-top:1rem"><h4>Últimes despeses</h4>
+      ${despProp.length?despProp.map(d=>`<div class="detail-row"><span class="detail-label">${despesaBadge(d.tipus)} ${d.descripcio||''}</span><span class="detail-val">${Number(d.import).toLocaleString('ca-ES')} € <span class="chip ${d.pagat?'chip-green':'chip-red'}" style="margin-left:4px">${d.pagat?'Pagada':'Pendent'}</span></span></div>`).join(''):'<p style="color:var(--text2);font-size:13px">Sense despeses registrades</p>'}
     </div>
     ${p.descripcio?`<div style="margin-top:1rem;padding:1rem;background:var(--surface2);border-radius:8px;font-size:13px;color:var(--text2)">${p.descripcio}</div>`:''}`;
   document.getElementById('detail-modal').classList.add('open');
@@ -1042,7 +1111,7 @@ function openContracteModal(id=null) {
   const pSel=document.getElementById('c-propietat'),lSel=document.getElementById('c-llogater');
   pSel.innerHTML=propietats.length?propietats.map(p=>`<option value="${p.id}">${p.adreca}, ${p.poblacio}</option>`).join(''):'<option>— Primer crea una propietat —</option>';
   lSel.innerHTML=llogaters.length?llogaters.map(l=>`<option value="${l.id}">${l.nom} ${l.cognoms} (${l.dni})</option>`).join(''):'<option>— Primer crea un llogater —</option>';
-  const fmap=[['tipus','tipus'],['actiu','actiu'],['inici','data_inici'],['fi','data_fi'],['preu','preu_mensual'],['fianca','fiança'],['iva','iva_percentatge'],['ibi','ibi'],['comunitat','comunitat'],['altres','altres_despeses'],['notes','notes']];
+  const fmap=[['tipus','tipus'],['actiu','actiu'],['inici','data_inici'],['fi','data_fi'],['preu','preu_mensual'],['fianca','fiança'],['iva','iva_percentatge'],['altres','altres_despeses'],['notes','notes']];
   if(id){const c=contractes.find(x=>x.id===id);fmap.forEach(([f,db])=>{const el=document.getElementById('c-'+f);if(el)el.value=c[db]??'';});pSel.value=c.propietat_id;lSel.value=c.llogater_id;}
   else{fmap.forEach(([f])=>{const el=document.getElementById('c-'+f);if(el)el.value=f==='actiu'?'true':f==='iva'?'0':'';});}
   document.getElementById('cont-modal').classList.add('open');
@@ -1053,7 +1122,7 @@ async function saveContracte() {
   const pid=document.getElementById('c-propietat').value,lid=document.getElementById('c-llogater').value;
   const inici=document.getElementById('c-inici').value,fi=document.getElementById('c-fi').value,preu=document.getElementById('c-preu').value;
   if(!pid||!lid||!inici||!fi||!preu){showToast('Propietat, llogater, dates i preu són obligatoris',true);return;}
-  const data={propietat_id:pid,llogater_id:lid,tipus:document.getElementById('c-tipus').value,actiu:document.getElementById('c-actiu').value==='true',data_inici:inici,data_fi:fi,preu_mensual:parseFloat(preu)||0,'fiança':parseFloat(document.getElementById('c-fianca').value)||0,iva_percentatge:parseFloat(document.getElementById('c-iva').value)||0,ibi:parseFloat(document.getElementById('c-ibi').value)||0,comunitat:parseFloat(document.getElementById('c-comunitat').value)||0,altres_despeses:parseFloat(document.getElementById('c-altres').value)||0,notes:document.getElementById('c-notes').value||null};
+  const data={propietat_id:pid,llogater_id:lid,tipus:document.getElementById('c-tipus').value,actiu:document.getElementById('c-actiu').value==='true',data_inici:inici,data_fi:fi,preu_mensual:parseFloat(preu)||0,'fiança':parseFloat(document.getElementById('c-fianca').value)||0,iva_percentatge:parseFloat(document.getElementById('c-iva').value)||0,altres_despeses:parseFloat(document.getElementById('c-altres').value)||0,notes:document.getElementById('c-notes').value||null};
   try{
     if(editingCont){await sbPatch('contractes',editingCont,data);const idx=contractes.findIndex(c=>c.id===editingCont);contractes[idx]={...contractes[idx],...data};showToast('Contracte actualitzat');}
     else{const res=await sbPost('contractes',data);contractes.unshift(res[0]);showToast('Contracte creat');}
@@ -1064,6 +1133,129 @@ async function saveContracte() {
 async function deleteContracte(id) {
   if(!canEdit()||!confirm('Eliminar aquest contracte?')) return;
   try{await sbDelete('contractes','id=eq.'+id);contractes=contractes.filter(c=>c.id!==id);renderContractes();loadDashboard();showToast('Contracte eliminat');}
+  catch(e){showToast('Error: '+e.message,true);}
+}
+
+// ─── DESPESES ─────────────────────────────────────────────────
+function initDespesaFilters() {
+  const sel = document.getElementById('desp-propietat');
+  sel.innerHTML = '<option value="">Totes les propietats</option>' +
+    propietats.map(p=>`<option value="${p.id}">${p.adreca}, ${p.poblacio}</option>`).join('');
+}
+
+function renderDespeses() {
+  const propFiltre=document.getElementById('desp-propietat').value;
+  const tipus=document.getElementById('desp-tipus').value;
+  const imputat=document.getElementById('desp-imputat').value;
+  const estat=document.getElementById('desp-estat').value;
+  const list=despeses.filter(d=>
+    (!propFiltre||d.propietat_id===propFiltre)&&
+    (!tipus||d.tipus===tipus)&&
+    (!imputat||d.imputat_a===imputat)&&
+    (estat===''||String(d.pagat)===estat)
+  );
+
+  // Estadístiques (sobre el conjunt filtrat per propietat/tipus, no per estat/imputat, per donar context global)
+  const baseStats = despeses.filter(d=>(!propFiltre||d.propietat_id===propFiltre)&&(!tipus||d.tipus===tipus));
+  const totalImport = baseStats.reduce((s,d)=>s+Number(d.import||0),0);
+  const pendents = baseStats.filter(d=>!d.pagat).reduce((s,d)=>s+Number(d.import||0),0);
+  const aLlogater = baseStats.filter(d=>d.imputat_a==='llogater').reduce((s,d)=>s+Number(d.import||0),0);
+  const aPropietari = baseStats.filter(d=>d.imputat_a==='propietari').reduce((s,d)=>s+Number(d.import||0),0);
+  document.getElementById('desp-st-total').textContent = totalImport.toLocaleString('ca-ES')+' €';
+  document.getElementById('desp-st-pendents').textContent = pendents.toLocaleString('ca-ES')+' €';
+  document.getElementById('desp-st-llogater').textContent = aLlogater.toLocaleString('ca-ES')+' €';
+  document.getElementById('desp-st-propietari').textContent = aPropietari.toLocaleString('ca-ES')+' €';
+
+  const tbody=document.getElementById('desp-tbody');
+  if(!list.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="ti ti-receipt-off"></i><p>Cap despesa registrada</p></div></td></tr>';return;}
+  tbody.innerHTML=list.map(d=>{
+    const prop=propietats.find(p=>p.id===d.propietat_id);
+    return `<tr>
+      <td>${prop?prop.adreca+', '+prop.poblacio:'—'}</td>
+      <td>${despesaBadge(d.tipus)}</td>
+      <td>${d.descripcio||'—'}</td>
+      <td><span class="chip ${d.imputat_a==='llogater'?'chip-blue':'chip-purple'}">${d.imputat_a==='llogater'?'Llogater':'Propietari'}</span></td>
+      <td>${Number(d.import).toLocaleString('ca-ES')} €</td>
+      <td>${formatDate(d.data_despesa)}</td>
+      <td><span class="chip ${d.pagat?'chip-green':'chip-red'}">${d.pagat?'Pagada':'Pendent'}</span></td>
+      <td style="white-space:nowrap">
+        ${!d.pagat?`<button class="btn btn-accent btn-sm" onclick="marcarDespesaPagada('${d.id}')"><i class="ti ti-check"></i></button> `:''}
+        ${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="openDespesaModal('${d.id}')"><i class="ti ti-edit"></i></button> <button class="btn btn-danger btn-sm" onclick="deleteDespesa('${d.id}')"><i class="ti ti-trash"></i></button>`:''}
+      </td></tr>`;
+  }).join('');
+}
+
+function openDespesaModal(id=null) {
+  if(!canEdit()) return; editingDespesa=id;
+  document.getElementById('despesa-modal-title').textContent=id?'Editar despesa':'Nova despesa';
+  const sel=document.getElementById('d-propietat');
+  sel.innerHTML=propietats.length?propietats.map(p=>`<option value="${p.id}">${p.adreca}, ${p.poblacio}</option>`).join(''):'<option>— Primer crea una propietat —</option>';
+  if(id){
+    const d=despeses.find(x=>x.id===id);
+    sel.value=d.propietat_id;
+    document.getElementById('d-tipus').value=d.tipus;
+    document.getElementById('d-imputat').value=d.imputat_a;
+    document.getElementById('d-desc').value=d.descripcio||'';
+    document.getElementById('d-import').value=d.import;
+    document.getElementById('d-data').value=d.data_despesa;
+    document.getElementById('d-pagat').value=String(d.pagat);
+  } else {
+    document.getElementById('d-tipus').value='comunitat';
+    document.getElementById('d-imputat').value='propietari';
+    document.getElementById('d-desc').value='';
+    document.getElementById('d-import').value='';
+    document.getElementById('d-data').value=new Date().toISOString().split('T')[0];
+    document.getElementById('d-pagat').value='false';
+  }
+  document.getElementById('despesa-modal').classList.add('open');
+}
+
+function onDespesaPropietatChange() {
+  // Reservat per si en un futur volem auto-suggerir imputat_a segons si la propietat té contracte actiu
+}
+
+async function saveDespesa() {
+  if(!canEdit()) return;
+  const propietat_id=document.getElementById('d-propietat').value;
+  const importVal=document.getElementById('d-import').value;
+  const dataVal=document.getElementById('d-data').value;
+  if(!propietat_id||!importVal||!dataVal){showToast('Propietat, import i data són obligatoris',true);return;}
+  const contracteActiu = contractes.find(c=>c.propietat_id===propietat_id && c.actiu);
+  const data={
+    propietat_id,
+    contracte_id: contracteActiu?contracteActiu.id:null,
+    tipus:document.getElementById('d-tipus').value,
+    descripcio:document.getElementById('d-desc').value||null,
+    import:parseFloat(importVal)||0,
+    imputat_a:document.getElementById('d-imputat').value,
+    data_despesa:dataVal,
+    pagat:document.getElementById('d-pagat').value==='true'
+  };
+  try{
+    if(editingDespesa){
+      await sbPatch('despeses',editingDespesa,data);
+      const idx=despeses.findIndex(d=>d.id===editingDespesa); despeses[idx]={...despeses[idx],...data};
+      showToast('Despesa actualitzada');
+    } else {
+      const res=await sbPost('despeses',data); despeses.unshift(res[0]);
+      showToast('Despesa registrada');
+    }
+    closeModal('despesa-modal'); renderDespeses();
+  }catch(e){showToast('Error: '+e.message,true);}
+}
+
+async function marcarDespesaPagada(id) {
+  try{
+    const avui=new Date().toISOString().split('T')[0];
+    await sbPatch('despeses',id,{pagat:true});
+    const idx=despeses.findIndex(d=>d.id===id); despeses[idx].pagat=true;
+    renderDespeses(); showToast('Despesa marcada com a pagada');
+  }catch(e){showToast('Error: '+e.message,true);}
+}
+
+async function deleteDespesa(id) {
+  if(!canEdit()||!confirm('Eliminar aquesta despesa?')) return;
+  try{await sbDelete('despeses','id=eq.'+id);despeses=despeses.filter(d=>d.id!==id);renderDespeses();showToast('Despesa eliminada');}
   catch(e){showToast('Error: '+e.message,true);}
 }
 
@@ -1116,6 +1308,61 @@ async function deletePagament(id) {
   if(!canEdit()||!confirm('Eliminar aquest pagament?')) return;
   try{await sbDelete('pagaments','id=eq.'+id);pagaments=pagaments.filter(p=>p.id!==id);renderPagaments();showToast('Pagament eliminat');}
   catch(e){showToast('Error: '+e.message,true);}
+}
+
+// ─── GENERACIÓ AUTOMÀTICA DE PAGAMENTS (dia 1 del mes) ────────
+async function checkAutoGenerarPagaments() {
+  if (!canEdit()) return; // només usuaris amb permisos d'edició disparen la generació
+  const now = new Date();
+  if (now.getDate() !== 1) return; // només es dispara el dia 1
+  const any = now.getFullYear(), mes = now.getMonth()+1;
+  try {
+    // Comprovar si ja s'han generat aquest mes
+    const ja = await sbGet('pagaments_generats', `any_pagament=eq.${any}&mes_pagament=eq.${mes}`);
+    if (ja.length) return; // ja generats, no fer res
+    await generarPagamentsDelMes(any, mes, true);
+  } catch(e) {
+    console.warn('No s\'ha pogut comprovar la generació automàtica:', e.message);
+  }
+}
+
+async function generarPagamentsManual() {
+  if (!canEdit()) return;
+  const now = new Date();
+  const any = now.getFullYear(), mes = now.getMonth()+1;
+  if (!confirm(`Generar pagaments pendents per a ${MESOS[mes]} ${any} de totes les propietats llogades?`)) return;
+  await generarPagamentsDelMes(any, mes, false);
+}
+
+async function generarPagamentsDelMes(any, mes, silent) {
+  try {
+    const propsLlogades = propietats.filter(p => p.estat === 'llogat');
+    let creats = 0, ja_existents = 0;
+    for (const prop of propsLlogades) {
+      const contracte = contractes.find(c => c.propietat_id === prop.id && c.actiu);
+      if (!contracte) continue;
+      const existeix = pagaments.find(p => p.contracte_id === contracte.id && p.any_pagament === any && p.mes_pagament === mes);
+      if (existeix) { ja_existents++; continue; }
+      const data = { contracte_id: contracte.id, any_pagament: any, mes_pagament: mes, import: Number(contracte.preu_mensual)||0, pagat: false };
+      try {
+        const res = await sbPost('pagaments', data);
+        pagaments.unshift(res[0]);
+        creats++;
+      } catch(e) { /* possible duplicat per concurrència, ignorem */ }
+    }
+    // Marcar com generat per evitar repeticions automàtiques
+    try { await sbPost('pagaments_generats', { any_pagament: any, mes_pagament: mes, generated_by: currentUser?.id||null }); } catch(e) {}
+
+    if (!silent) {
+      showToast(`Generats ${creats} pagaments nous (${ja_existents} ja existien)`);
+      renderPagaments(); loadDashboard();
+    } else if (creats > 0) {
+      document.getElementById('pag-auto-info').innerHTML = `<div class="alert alert-success"><i class="ti ti-check"></i>S'han generat automàticament ${creats} pagaments pendents per a ${MESOS[mes]} ${any}.</div>`;
+      renderPagaments(); loadDashboard();
+    }
+  } catch(e) {
+    if (!silent) showToast('Error generant pagaments: '+e.message, true);
+  }
 }
 
 // ─── GRUPS ────────────────────────────────────────────────────
@@ -1214,12 +1461,11 @@ async function openGrupUsuarisModal(grupId, nom) {
     assignats.forEach(a=>assignatsMap[a.usuari_id]=a.rol_grup);
     document.getElementById('grup-usuaris-list').innerHTML=totsUsuaris.length
       ?totsUsuaris.map(u=>{
-        const ini=(u.nom||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
         const rolActual=assignatsMap[u.id]||'';
         return `<div class="assign-item" style="flex-direction:column;align-items:flex-start;gap:8px">
           <div style="display:flex;align-items:center;gap:10px;width:100%">
             <input type="checkbox" id="gu-${u.id}" value="${u.id}" ${rolActual?'checked':''} onchange="toggleGrupUsuariRol('${u.id}')">
-            <label for="gu-${u.id}" style="flex:1;font-weight:600">${u.nom} <span class="chip ${rolChipClass(u.rol)} " style="font-size:9px">${rolLabel(u.rol)}</span></label>
+            <label for="gu-${u.id}" style="flex:1;font-weight:600">${u.nom} <span class="chip ${rolChipClass(u.rol)}" style="font-size:9px">${rolLabel(u.rol)}</span></label>
           </div>
           <div id="rol-sel-${u.id}" style="${rolActual?'':'display:none'};padding-left:26px;width:100%">
             <select id="gu-rol-${u.id}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);width:100%">
