@@ -234,6 +234,7 @@
         <span id="alert-badge" style="margin-left:auto;background:var(--danger);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;display:none"></span>
       </div>
       <div class="nav-item" id="nav-grups" style="display:none" onclick="showSection('grups',this)"><i class="ti ti-layout-grid"></i> Grups</div>
+      <div class="nav-item" id="nav-audit" style="display:none" onclick="showSection('audit',this)"><i class="ti ti-list-search"></i> Registre d'activitat</div>
       <div class="nav-item" id="nav-usuaris" style="display:none" onclick="showSection('usuaris',this)"><i class="ti ti-shield-lock"></i> Usuaris</div>
     </nav>
     <div class="sidebar-footer">
@@ -410,6 +411,49 @@
         <button class="btn btn-primary" id="btn-nou-grup" style="display:none" onclick="openGrupModal()"><i class="ti ti-plus"></i> Nou grup</button>
       </div>
       <div class="cards-grid" id="grups-grid"></div>
+    </div>
+
+    <!-- AUDIT LOG -->
+    <div id="sec-audit" class="section">
+      <div class="page-header">
+        <div><div class="page-title">Registre d'activitat</div><div class="page-subtitle">Traçabilitat completa de tots els canvis</div></div>
+        <button class="btn btn-ghost" onclick="loadAudit()"><i class="ti ti-refresh"></i> Actualitzar</button>
+      </div>
+      <div id="audit-alertes-box" style="margin-bottom:1rem"></div>
+      <div class="filters">
+        <select class="filter-input" id="audit-taula" onchange="loadAudit()">
+          <option value="">Totes les taules</option>
+          <option value="propietats">Propietats</option>
+          <option value="contractes">Contractes</option>
+          <option value="llogaters">Llogaters</option>
+          <option value="pagaments">Pagaments</option>
+          <option value="despeses">Despeses</option>
+          <option value="dades_bancaries">Dades bancàries</option>
+          <option value="grups">Grups</option>
+          <option value="perfils">Perfils / Usuaris</option>
+        </select>
+        <select class="filter-input" id="audit-accio" onchange="loadAudit()">
+          <option value="">Totes les accions</option>
+          <option value="INSERT">Creació</option>
+          <option value="UPDATE">Modificació</option>
+          <option value="DELETE">Eliminació</option>
+        </select>
+        <select class="filter-input" id="audit-sospitos" onchange="loadAudit()">
+          <option value="">Tots</option>
+          <option value="true">Només sospitosos</option>
+        </select>
+        <select class="filter-input" id="audit-limit" onchange="loadAudit()">
+          <option value="50">Últims 50</option>
+          <option value="100">Últims 100</option>
+          <option value="200">Últims 200</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Moment</th><th>Usuari</th><th>Acció</th><th>Taula</th><th>Registre</th><th>Detall canvis</th><th>Alerta</th></tr></thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- USUARIS -->
@@ -793,6 +837,7 @@ function despesaBadge(t) {
 function applyRolUI() {
   const sa = isSuperadmin(), admin = isAdminOrSuperadmin(), edit = canEdit();
   document.getElementById('nav-grups').style.display = (sa||edit) ? 'flex' : 'none';
+  document.getElementById('nav-audit').style.display = (sa||admin) ? 'flex' : 'none';
   document.getElementById('nav-usuaris').style.display = (sa||admin) ? 'flex' : 'none';
   document.getElementById('btn-nou-grup').style.display = sa ? '' : 'none';
   ['btn-nova-prop','btn-nou-cont','btn-nou-llog','btn-nou-pag','btn-nova-despesa'].forEach(id => {
@@ -939,7 +984,7 @@ function showSection(id, el) {
   document.getElementById('sec-'+id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if (el) el.classList.add('active');
-  ({dashboard:loadDashboard,propietats:renderPropietats,contractes:renderContractes,llogaters:renderLlogaters,despeses:renderDespeses,pagaments:renderPagaments,alertes:renderAlertes,grups:loadGrups,usuaris:loadUsuaris})[id]?.();
+  ({dashboard:loadDashboard,propietats:renderPropietats,contractes:renderContractes,llogaters:renderLlogaters,despeses:renderDespeses,pagaments:renderPagaments,alertes:renderAlertes,grups:loadGrups,usuaris:loadUsuaris,audit:loadAudit})[id]?.();
 }
 
 // ─── ALERTES ──────────────────────────────────────────────────
@@ -1430,6 +1475,121 @@ async function generarPagamentsDelMes(any, mes, silent) {
   } catch(e) {
     if (!silent) showToast('Error generant pagaments: '+e.message, true);
   }
+}
+
+// ─── AUDIT LOG ────────────────────────────────────────────────
+async function loadAudit() {
+  if (!isAdminOrSuperadmin()) return;
+  const taula    = document.getElementById('audit-taula').value;
+  const accio    = document.getElementById('audit-accio').value;
+  const sospitos = document.getElementById('audit-sospitos').value;
+  const limit    = document.getElementById('audit-limit').value || '50';
+
+  let qs = `limit=${limit}`;
+  if (taula)    qs += `&taula=eq.${taula}`;
+  if (accio)    qs += `&accio=eq.${accio}`;
+  if (sospitos) qs += `&sospitos=eq.${sospitos}`;
+
+  try {
+    const rows = await sbGet('audit_log', qs);
+    renderAudit(rows);
+    await renderAuditAlertes();
+  } catch(e) { showToast('Error carregant audit: '+e.message, true); }
+}
+
+async function renderAuditAlertes() {
+  try {
+    // Comptar entrades sospitoses de les últimes 24h
+    const sospitoses = await sbGet('audit_log', 'sospitos=eq.true&moment=gte.'+ new Date(Date.now()-86400000).toISOString());
+    const box = document.getElementById('audit-alertes-box');
+    if (sospitoses.length) {
+      const usuarisAfectats = [...new Set(sospitoses.map(s=>s.usuari_email).filter(Boolean))];
+      box.innerHTML = `<div class="alert alert-danger">
+        <i class="ti ti-alert-triangle"></i>
+        <div><strong>${sospitoses.length} acció(ns) sospitosa(es) en les últimes 24h</strong>
+        ${usuarisAfectats.length?`<br><span style="font-size:12px">Usuaris implicats: ${usuarisAfectats.join(', ')}</span>`:''}
+        </div>
+      </div>`;
+    } else {
+      box.innerHTML = '<div class="alert alert-success"><i class="ti ti-shield-check"></i>Sense activitat sospitosa en les últimes 24h.</div>';
+    }
+  } catch(e) { /* silenciós */ }
+}
+
+function renderAudit(rows) {
+  const tbody = document.getElementById('audit-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><i class="ti ti-list-search"></i><p>Cap registre trobat</p></div></td></tr>';
+    return;
+  }
+
+  const accioChip = {
+    INSERT: '<span class="chip chip-green">Creació</span>',
+    UPDATE: '<span class="chip chip-amber">Modificació</span>',
+    DELETE: '<span class="chip chip-red">Eliminació</span>'
+  };
+
+  const taulaLabel = {
+    propietats:'Propietats', contractes:'Contractes', llogaters:'Llogaters',
+    pagaments:'Pagaments', despeses:'Despeses', dades_bancaries:'Dades bancàries',
+    grups:'Grups', grup_usuaris:'Grup usuaris', grup_propietats:'Grup propietats',
+    perfils:'Perfils'
+  };
+
+  tbody.innerHTML = rows.map(r => {
+    const moment = new Date(r.moment).toLocaleString('ca-ES', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const detall = generarDetallCanvis(r);
+    return `<tr style="${r.sospitos?'background:rgba(192,57,43,0.04)':''}">
+      <td style="white-space:nowrap;font-size:12px;font-family:monospace">${moment}</td>
+      <td style="font-size:12px">${r.usuari_email||'<span style="color:var(--text2)">—</span>'}</td>
+      <td>${accioChip[r.accio]||r.accio}</td>
+      <td><span class="chip chip-gray" style="font-size:10px">${taulaLabel[r.taula]||r.taula}</span></td>
+      <td style="font-size:11px;font-family:monospace;color:var(--text2)">${r.registre_id?r.registre_id.slice(0,8)+'...':'—'}</td>
+      <td style="font-size:12px;max-width:300px">${detall}</td>
+      <td style="text-align:center">${r.sospitos?'<span title="Activitat sospitosa" style="color:var(--danger);font-size:18px">⚠️</span>':'<span style="color:var(--success)">✓</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function generarDetallCanvis(r) {
+  // Camps sensibles que no mostrem en clar (estan xifrats de totes formes)
+  const campsSensibles = ['dni','email','telefon','adreca','data_naixement','iban','titular','entitat'];
+
+  if (r.accio === 'INSERT') {
+    const nous = r.valors_nous || {};
+    const campsRellevants = Object.keys(nous).filter(k =>
+      !['id','created_at','updated_at','salt'].includes(k) &&
+      nous[k] !== null && nous[k] !== ''
+    );
+    if (!campsRellevants.length) return '<span style="color:var(--text2)">Registre nou</span>';
+    return campsRellevants.slice(0,4).map(k => {
+      const val = campsSensibles.includes(k) ? '<em style="color:var(--text2)">[xifrat]</em>' : `<strong>${String(nous[k]).slice(0,30)}</strong>`;
+      return `<span style="color:var(--text2)">${k}:</span> ${val}`;
+    }).join(' · ');
+  }
+
+  if (r.accio === 'UPDATE') {
+    const antics = r.valors_antics || {}, nous = r.valors_nous || {};
+    const canvis = Object.keys(nous).filter(k =>
+      !['id','created_at','updated_at','salt'].includes(k) &&
+      JSON.stringify(antics[k]) !== JSON.stringify(nous[k])
+    );
+    if (!canvis.length) return '<span style="color:var(--text2)">Sense canvis detectats</span>';
+    return canvis.slice(0,3).map(k => {
+      if (campsSensibles.includes(k)) return `<span style="color:var(--text2)">${k}:</span> <em style="color:var(--text2)">[xifrat → xifrat]</em>`;
+      const vell = String(antics[k]||'—').slice(0,20);
+      const nou  = String(nous[k]||'—').slice(0,20);
+      return `<span style="color:var(--text2)">${k}:</span> <del style="color:var(--danger);opacity:0.7">${vell}</del> → <strong style="color:var(--success)">${nou}</strong>`;
+    }).join(' · ');
+  }
+
+  if (r.accio === 'DELETE') {
+    const antics = r.valors_antics || {};
+    const id = antics.id ? antics.id.slice(0,8)+'...' : '—';
+    return `<span style="color:var(--danger)">Registre eliminat</span> <span style="color:var(--text2);font-size:11px">(id: ${id})</span>`;
+  }
+
+  return '—';
 }
 
 // ─── GRUPS ────────────────────────────────────────────────────
