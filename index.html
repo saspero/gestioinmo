@@ -662,6 +662,40 @@
   </div>
 </div>
 
+<!-- MODAL DADES BANCÀRIES -->
+<div class="modal-overlay" id="banc-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3 id="banc-modal-title">Dades bancàries</h3>
+      <button class="btn-close" onclick="closeModal('banc-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="banc-llogater-id">
+      <div class="alert alert-info" style="margin-bottom:1rem">
+        <i class="ti ti-lock"></i> Les dades bancàries es xifren localment al teu navegador abans d'enviar-se. Ni Supabase les pot llegir sense la teva contrasenya.
+      </div>
+      <!-- Llista de comptes existents -->
+      <div id="banc-list" style="margin-bottom:1.25rem"></div>
+      <!-- Formulari nou/editar -->
+      <div style="border-top:1px solid var(--border);padding-top:1rem">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);margin-bottom:0.75rem">
+          Afegir / Editar compte
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>Titular *</label><input type="text" id="banc-titular" placeholder="Nom complet del titular"></div>
+          <div class="form-group"><label>Entitat bancària</label><input type="text" id="banc-entitat" placeholder="CaixaBank, Santander..."></div>
+          <div class="form-group span-2"><label>IBAN *</label><input type="text" id="banc-iban" placeholder="ES00 0000 0000 0000 0000 0000" style="font-family:monospace;letter-spacing:1px"></div>
+          <div class="form-group span-2"><label>Notes</label><input type="text" id="banc-notes" placeholder="Observacions opcionals"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('banc-modal')">Tancar</button>
+      <button class="btn btn-primary" onclick="saveBancaries()"><i class="ti ti-device-floppy"></i> Guardar compte</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -822,6 +856,8 @@ async function doLogin() {
     saveSession(d);
     loginAttempts.count=0;
     document.getElementById('login-attempts').style.display='none';
+    // Derivar clau de xifrat a partir de la contrasenya (viu només en memòria)
+    await derivarClau(pass);
     await initApp();
   } catch(e) {
     errEl.textContent=e.message; errEl.style.display='block';
@@ -832,8 +868,20 @@ async function doLogin() {
 document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 document.getElementById('login-email').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
+// Formatejador IBAN automàtic
+document.addEventListener('DOMContentLoaded', () => {
+  const ibanInput = document.getElementById('banc-iban');
+  if (ibanInput) {
+    ibanInput.addEventListener('input', function() {
+      let v = this.value.replace(/\s/g,'').toUpperCase();
+      this.value = v.match(/.{1,4}/g)?.join(' ') || v;
+    });
+  }
+});
+
 async function doLogout() {
   try { await fetch(AUTH+'/logout',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+accessToken}}); } catch(e){}
+  netejarClau(); // Eliminar clau de xifrat de memòria
   clearSession(); accessToken=null; currentUser=null; currentPerfil=null;
   propietats=[]; llogaters=[]; contractes=[]; pagaments=[]; despeses=[]; grups=[]; usuaris=[];
   document.getElementById('app').style.display='none';
@@ -877,8 +925,10 @@ async function loadAll() {
     const promises = [sbGet('propietats'), sbGet('llogaters'), sbGet('contractes'), sbGet('pagaments'), sbGet('despeses')];
     if (isSuperadmin() || isAdminOrSuperadmin()) promises.push(sbGet('grups'));
     const results = await Promise.all(promises);
-    propietats=results[0]; llogaters=results[1]; contractes=results[2]; pagaments=results[3]; despeses=results[4];
+    propietats=results[0]; contractes=results[2]; pagaments=results[3]; despeses=results[4];
     if (results[5]) grups=results[5];
+    // Desxifrar llogaters (camps sensibles xifrats a l'app)
+    llogaters = await Promise.all(results[1].map(l => desxifraLlogaterCamps(l)));
     initPagamentFilters(); initDespesaFilters(); loadDashboard();
   } catch(e) { showToast('Error carregant dades: '+e.message,true); }
 }
@@ -1060,8 +1110,10 @@ function renderLlogaters() {
   const tbody=document.getElementById('llog-tbody');
   if(!list.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><i class="ti ti-users-off"></i><p>Cap llogater</p></div></td></tr>';return;}
   tbody.innerHTML=list.map(l=>`<tr>
-    <td><strong>${l.nom} ${l.cognoms}</strong></td><td>${l.dni}</td><td>${l.email||'—'}</td><td>${l.telefon||'—'}</td>
-    <td style="white-space:nowrap">${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="openLlogaterModal('${l.id}')"><i class="ti ti-edit"></i></button> <button class="btn btn-danger btn-sm" onclick="deleteLlogater('${l.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`).join('');
+    <td><strong>${l.nom} ${l.cognoms}</strong></td><td>${l.dni||'—'}</td><td>${l.email||'—'}</td><td>${l.telefon||'—'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-ghost btn-sm" onclick="openBancariesModal('${l.id}','${l.nom} ${l.cognoms}')"><i class="ti ti-building-bank"></i></button>
+      ${canEdit()?`<button class="btn btn-ghost btn-sm" onclick="openLlogaterModal('${l.id}')"><i class="ti ti-edit"></i></button> <button class="btn btn-danger btn-sm" onclick="deleteLlogater('${l.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`).join('');
 }
 
 function openLlogaterModal(id=null) {
@@ -1079,8 +1131,23 @@ async function saveLlogater() {
   if(!nom||!cognoms||!dni){showToast('Nom, cognoms i DNI són obligatoris',true);return;}
   const data={nom,cognoms,dni,data_naixement:document.getElementById('l-naix').value||null,email:document.getElementById('l-email').value||null,telefon:document.getElementById('l-tel').value||null,adreca:document.getElementById('l-adreca').value||null};
   try{
-    if(editingLlog){await sbPatch('llogaters',editingLlog,data);const idx=llogaters.findIndex(l=>l.id===editingLlog);llogaters[idx]={...llogaters[idx],...data};showToast('Llogater actualitzat');}
-    else{const res=await sbPost('llogaters',data);llogaters.unshift(res[0]);showToast('Llogater creat');}
+    if(editingLlog){
+      // Obtenir salt existent del registre
+      const existing = llogaters.find(l=>l.id===editingLlog);
+      const salt = existing?.salt || generarSalt();
+      const dataXifrada = await xifraLlogaterCamps({...data, salt}, salt);
+      await sbPatch('llogaters',editingLlog,dataXifrada);
+      const dataDesxifrada = await desxifraLlogaterCamps({...dataXifrada, id:editingLlog, salt, nom, cognoms, created_at: existing?.created_at});
+      const idx=llogaters.findIndex(l=>l.id===editingLlog); llogaters[idx]={...llogaters[idx],...dataDesxifrada};
+      showToast('Llogater actualitzat');
+    } else {
+      const salt = generarSalt();
+      const dataXifrada = await xifraLlogaterCamps({...data, salt}, salt);
+      const res=await sbPost('llogaters',{...dataXifrada, salt});
+      const desxifrat = await desxifraLlogaterCamps(res[0]);
+      llogaters.unshift(desxifrat);
+      showToast('Llogater creat');
+    }
     closeModal('llog-modal');renderLlogaters();
   }catch(e){showToast('Error: '+e.message,true);}
 }
@@ -1564,6 +1631,222 @@ async function toggleActiu(id,actiu) {
   try{await sbPatch('perfils',id,{actiu:!actiu});const idx=usuaris.findIndex(u=>u.id===id);usuaris[idx].actiu=!actiu;renderUsuaris();showToast('Estat actualitzat');}
   catch(e){showToast('Error: '+e.message,true);}
 }
+
+// ═══════════════════════════════════════════════════════════════
+// MÒDUL DE XIFRAT — Web Crypto API (AES-GCM 256bit + PBKDF2)
+// La clau viu NOMÉS en memòria, mai es guarda a localStorage
+// ═══════════════════════════════════════════════════════════════
+let _appCryptoKey = null;
+const PBKDF2_ITERATIONS = 200000;
+const SALT_APP = 'GestImmob2026_salt_fix';
+
+async function derivarClau(password) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+  _appCryptoKey = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: enc.encode(SALT_APP), iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+function tenimClau() { return _appCryptoKey !== null; }
+function netejarClau() { _appCryptoKey = null; }
+
+function generarSalt() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function _subKey(saltRegistre) {
+  const enc = new TextEncoder();
+  const raw = await crypto.subtle.exportKey('raw', _appCryptoKey);
+  const km = await crypto.subtle.importKey('raw', raw, { name: 'PBKDF2' }, false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: enc.encode(SALT_APP + (saltRegistre||'')), iterations: 1000, hash: 'SHA-256' },
+    km, { name: 'AES-GCM', length: 256 }, false, ['encrypt','decrypt']
+  );
+}
+
+async function xifraApp(textPla, saltRegistre) {
+  if (!_appCryptoKey || !textPla) return textPla || null;
+  const enc = new TextEncoder();
+  const subKey = await _subKey(saltRegistre);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, subKey, enc.encode(textPla));
+  const combined = new Uint8Array(12 + ct.byteLength);
+  combined.set(iv); combined.set(new Uint8Array(ct), 12);
+  return btoa(String.fromCharCode(...combined));
+}
+
+async function desxifraApp(textXifrat, saltRegistre) {
+  if (!_appCryptoKey || !textXifrat) return textXifrat || null;
+  try {
+    const subKey = await _subKey(saltRegistre);
+    const combined = Uint8Array.from(atob(textXifrat), c => c.charCodeAt(0));
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: combined.slice(0,12) }, subKey, combined.slice(12));
+    return new TextDecoder().decode(pt);
+  } catch(e) { return '[xifrat]'; }
+}
+
+async function xifraLlogaterCamps(data, salt) {
+  if (!tenimClau()) return data;
+  return { ...data,
+    dni:            await xifraApp(data.dni, salt),
+    email:          await xifraApp(data.email, salt),
+    telefon:        await xifraApp(data.telefon, salt),
+    adreca:         await xifraApp(data.adreca, salt),
+    data_naixement: data.data_naixement ? await xifraApp(data.data_naixement, salt) : null,
+  };
+}
+
+async function desxifraLlogaterCamps(row) {
+  if (!row || !tenimClau()) return row;
+  const s = row.salt || '';
+  return { ...row,
+    dni:            await desxifraApp(row.dni, s),
+    email:          await desxifraApp(row.email, s),
+    telefon:        await desxifraApp(row.telefon, s),
+    adreca:         await desxifraApp(row.adreca, s),
+    data_naixement: await desxifraApp(row.data_naixement, s),
+  };
+}
+
+async function xifraBancaries(data, salt) {
+  if (!tenimClau()) return data;
+  return { ...data,
+    titular: await xifraApp(data.titular, salt),
+    iban:    await xifraApp(data.iban, salt),
+    entitat: await xifraApp(data.entitat, salt),
+    notes:   await xifraApp(data.notes, salt),
+  };
+}
+
+async function desxifraBancaries(row) {
+  if (!row || !tenimClau()) return row;
+  const s = row.salt || '';
+  return { ...row,
+    titular: await desxifraApp(row.titular, s),
+    iban:    await desxifraApp(row.iban, s),
+    entitat: await desxifraApp(row.entitat, s),
+    notes:   await desxifraApp(row.notes, s),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DADES BANCÀRIES
+// ═══════════════════════════════════════════════════════════════
+let dadesBancaries = [];
+let editingBancaries = null;
+
+async function loadDadesBancaries(llogater_id) {
+  try {
+    const rows = await sbGet('dades_bancaries', 'llogater_id=eq.'+llogater_id);
+    const desxifrades = await Promise.all(rows.map(r => desxifraBancaries(r)));
+    return desxifrades;
+  } catch(e) { return []; }
+}
+
+function openBancariesModal(llogater_id, nom_llogater) {
+  if (!canEdit()) return;
+  editingBancaries = null;
+  document.getElementById('banc-llogater-id').value = llogater_id;
+  document.getElementById('banc-modal-title').textContent = `Dades bancàries — ${nom_llogater}`;
+  document.getElementById('banc-titular').value = '';
+  document.getElementById('banc-iban').value = '';
+  document.getElementById('banc-entitat').value = '';
+  document.getElementById('banc-notes').value = '';
+  loadBancariesList(llogater_id);
+  document.getElementById('banc-modal').classList.add('open');
+}
+
+async function loadBancariesList(llogater_id) {
+  const list = await loadDadesBancaries(llogater_id);
+  const el = document.getElementById('banc-list');
+  if (!list.length) {
+    el.innerHTML = '<p style="color:var(--text2);font-size:13px;padding:8px 0">Sense dades bancàries registrades</p>';
+    return;
+  }
+  el.innerHTML = list.map(b => `
+    <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border:1px solid var(--border);margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:13px;font-weight:600">${b.titular||'—'}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px;font-family:monospace">${b.iban||'—'}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${b.entitat||''}</div>
+          ${b.notes?`<div style="font-size:11px;color:var(--text2);margin-top:2px">${b.notes}</div>`:''}
+        </div>
+        ${canEdit()?`<div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick="editBancaries('${b.id}','${b.llogater_id}')"><i class="ti ti-edit"></i></button>
+          <button class="btn btn-danger btn-sm" onclick="deleteBancaries('${b.id}','${b.llogater_id}')"><i class="ti ti-trash"></i></button>
+        </div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+async function editBancaries(id, llogater_id) {
+  editingBancaries = id;
+  try {
+    const rows = await sbGet('dades_bancaries','id=eq.'+id);
+    const row = await desxifraBancaries(rows[0]);
+    document.getElementById('banc-titular').value = row.titular||'';
+    document.getElementById('banc-iban').value = row.iban||'';
+    document.getElementById('banc-entitat').value = row.entitat||'';
+    document.getElementById('banc-notes').value = row.notes||'';
+  } catch(e) { showToast('Error carregant dades bancàries', true); }
+}
+
+async function saveBancaries() {
+  if (!canEdit()) return;
+  const llogater_id = document.getElementById('banc-llogater-id').value;
+  const titular = document.getElementById('banc-titular').value.trim();
+  const iban = document.getElementById('banc-iban').value.trim().toUpperCase().replace(/\s/g,'');
+  const entitat = document.getElementById('banc-entitat').value.trim();
+  const notes = document.getElementById('banc-notes').value.trim();
+  if (!titular || !iban) { showToast('Titular i IBAN són obligatoris', true); return; }
+
+  // Validació bàsica IBAN
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$/.test(iban)) {
+    showToast('Format IBAN incorrecte', true); return;
+  }
+
+  const salt = generarSalt();
+  const rawData = { llogater_id, titular, iban, entitat: entitat||null, notes: notes||null };
+  try {
+    if (editingBancaries) {
+      // Obtenir salt existent
+      const existing = await sbGet('dades_bancaries','id=eq.'+editingBancaries);
+      const saltExistent = existing[0]?.salt || salt;
+      const xifrat = await xifraBancaries({ ...rawData, salt: saltExistent }, saltExistent);
+      await sbPatch('dades_bancaries', editingBancaries, xifrat);
+      showToast('Dades bancàries actualitzades');
+    } else {
+      const xifrat = await xifraBancaries({ ...rawData, salt }, salt);
+      await sbPost('dades_bancaries', { ...xifrat, salt });
+      showToast('Dades bancàries guardades');
+    }
+    editingBancaries = null;
+    document.getElementById('banc-titular').value = '';
+    document.getElementById('banc-iban').value = '';
+    document.getElementById('banc-entitat').value = '';
+    document.getElementById('banc-notes').value = '';
+    await loadBancariesList(llogater_id);
+  } catch(e) { showToast('Error: '+e.message, true); }
+}
+
+async function deleteBancaries(id, llogater_id) {
+  if (!canEdit() || !confirm('Eliminar aquestes dades bancàries?')) return;
+  try {
+    await sbDelete('dades_bancaries','id=eq.'+id);
+    await loadBancariesList(llogater_id);
+    showToast('Dades bancàries eliminades');
+  } catch(e) { showToast('Error: '+e.message, true); }
+}
+
 </script>
 </body>
 </html>
