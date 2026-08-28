@@ -8,13 +8,16 @@ BEGIN;
 
 -- Còpia local (per tenant) de la funció d'actualització de `updated_at`, perquè els
 -- triggers d'aquest schema no depenguin de `public` restant al search_path.
+-- `SET search_path FROM CURRENT` fixa, en el moment de crear/reemplaçar la funció,
+-- l'schema del tenant actiu (i `public`) com a search_path d'execució — mitiga
+-- search_path hijacking sense hardcodejar el nom de l'schema del tenant al fitxer.
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path FROM CURRENT;
 
 DO $$ BEGIN
   CREATE TYPE tipus_propietat AS ENUM ('edifici', 'casa', 'pis', 'local', 'solar', 'altres');

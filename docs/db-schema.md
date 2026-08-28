@@ -432,7 +432,7 @@ VALUES (
   ...
 );
 
--- lectura (només quan el mòdul consultant té permís sobre la dada, vegeu §7.7)
+-- lectura (només quan el mòdul consultant té permís sobre la dada, vegeu §7.8)
 SELECT pgp_sym_decrypt(nif_enc, $1) AS nif,
        pgp_sym_decrypt(iban_enc, $1) AS iban,
        pgp_sym_decrypt(email_enc, $1) AS email
@@ -514,7 +514,33 @@ substitutiu**, de la taula `auditoria` per tenant (§3.15): aquella registra can
 negoci amb valor anterior/posterior a nivell de fila generats només des de l'aplicació;
 `pgaudit` cobreix l'accés a la base de dades en si.
 
-### 7.7 Llista negra de camps (logs i respostes d'API)
+### 7.7 `search_path` fix a totes les funcions (mitigació de *search_path hijacking*)
+
+Totes les funcions PL/pgSQL definides per aquestes migracions (`update_updated_at`,
+`set_estat_inquili_defecte`, `check_percentatge_titularitat`, `sync_estat_unitat`,
+`prevent_baixa_propietat_amb_contractes`, `prevent_baixa_persona`,
+`sync_estat_inquili_mora`, `marcar_pagaments_vencuts`, `prevent_reobrir_incidencia`,
+`registra_auditoria`) porten una clàusula `SET search_path` fixa a la seva definició:
+
+- `public.update_updated_at` (`001_tenants.sql`): `SET search_path = public, pg_temp`
+  (schema fix i conegut).
+- Totes les funcions de schema de TENANT (`003_propietats.sql` a `008_auditoria.sql`):
+  `SET search_path FROM CURRENT`. Com que aquestes migracions s'executen amb el
+  `search_path` de la sessió ja apuntant a `tenant_{uuid}, public` (§1.2), `FROM CURRENT`
+  captura automàticament l'schema correcte de cada tenant en el moment de crear/reemplaçar
+  la funció — sense hardcodejar cap nom d'schema al fitxer de migració, que continua sent
+  vàlid per a qualsevol tenant.
+
+**Per què cal:** sense aquesta clàusula, l'`search_path` efectiu d'una funció el fixa qui
+la invoca (o l'estat de la sessió en el moment de l'execució), no qui la va definir. Un
+atacant amb prou permisos per crear objectes en un schema que aparegui abans a l'`search_path`
+de l'invocador podria crear una funció/taula amb el mateix nom que una referenciada sense
+qualificar dins d'aquestes funcions PL/pgSQL i fer-la executar amb els permisos del
+definidor (*search_path hijacking*). Fixar `search_path` a la definició elimina aquesta
+ambigüitat. Correspon a l'advisory de seguretat de Supabase
+`function_search_path_mutable`.
+
+### 7.8 Llista negra de camps (logs i respostes d'API)
 
 Els camps següents no apareixen mai, en cap forma, en logs d'aplicació, missatges
 d'error ni respostes d'API que no els hagin sol·licitat explícitament amb permisos
@@ -576,4 +602,5 @@ d'usar-lo amb `format()`/concatenació segura, per evitar injecció d'identifica
 - [x] `nif`, `iban` i `email` de `persones` estan xifrats amb `pgcrypto`, amb `nif_hash` com a hash determinista per a cerca/unicitat
 - [x] El pool de connexions `pg`, les variables `DATABASE_URL_*` per entorn, la política de backups/PITR i el procediment de rotació de credencials estan documentats (§7)
 - [x] `pgaudit` s'intenta activar a `010_rls.sql` (amb fallback documentat si l'entorn ho restringeix) i la seva configuració (`pgaudit.log`) queda documentada com a pas manual
-- [x] La llista negra de camps sensibles (§7.7) està documentada i assignada als agents responsables de complir-la
+- [x] La llista negra de camps sensibles (§7.8) està documentada i assignada als agents responsables de complir-la
+- [x] Totes les funcions PL/pgSQL porten `search_path` fix a la definició (§7.7), mitigant l'advisory de seguretat `function_search_path_mutable`

@@ -77,7 +77,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path FROM CURRENT;
 
 CREATE OR REPLACE TRIGGER trg_prevent_reobrir_incidencia
   BEFORE UPDATE ON incidencies

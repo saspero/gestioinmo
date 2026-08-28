@@ -57,6 +57,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS persones_nif_hash_actiu_unique
   ON persones (nif_hash)
   WHERE nif_hash IS NOT NULL AND deleted_at IS NULL;
 
+-- SET search_path FROM CURRENT: vegeu nota a 003_propietats.sql.
 CREATE OR REPLACE FUNCTION set_estat_inquili_defecte()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -65,7 +66,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path FROM CURRENT;
 
 CREATE OR REPLACE TRIGGER trg_persones_estat_inquili_defecte
   BEFORE INSERT ON persones
@@ -105,9 +106,12 @@ BEGIN
   END IF;
   RETURN NULL;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path FROM CURRENT;
 
-CREATE OR REPLACE CONSTRAINT TRIGGER trg_check_percentatge_titularitat
+-- PostgreSQL no admet `CREATE OR REPLACE CONSTRAINT TRIGGER`; per mantenir la migració
+-- idempotent, s'elimina el trigger si ja existeix abans de recrear-lo.
+DROP TRIGGER IF EXISTS trg_check_percentatge_titularitat ON propietat_propietaris;
+CREATE CONSTRAINT TRIGGER trg_check_percentatge_titularitat
   AFTER INSERT OR UPDATE OR DELETE ON propietat_propietaris
   DEFERRABLE INITIALLY DEFERRED
   FOR EACH ROW EXECUTE FUNCTION check_percentatge_titularitat();

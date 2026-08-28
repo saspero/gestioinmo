@@ -5,13 +5,16 @@
 
 BEGIN;
 
+-- `SET search_path` fixa l'schema de resolució de noms en temps d'execució
+-- (independentment del search_path de qui invoqui la funció), mitigant search_path
+-- hijacking (advisory de seguretat de Supabase: function_search_path_mutable).
 CREATE OR REPLACE FUNCTION public.update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public, pg_temp;
 
 CREATE TABLE IF NOT EXISTS public.tenants (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),

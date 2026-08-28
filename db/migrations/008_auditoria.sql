@@ -50,7 +50,7 @@ BEGIN
     RETURN NEW;
   END IF;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path FROM CURRENT;
 
 CREATE OR REPLACE TRIGGER trg_auditoria_propietats
   AFTER INSERT OR UPDATE OR DELETE ON propietats

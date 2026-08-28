@@ -76,7 +76,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path FROM CURRENT;
 
 CREATE OR REPLACE TRIGGER trg_sync_estat_unitat
   AFTER INSERT OR UPDATE ON contractes
@@ -98,7 +98,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path FROM CURRENT;
 
 CREATE OR REPLACE TRIGGER trg_prevent_baixa_propietat
   BEFORE UPDATE ON propietats
@@ -128,7 +128,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path FROM CURRENT;
 
 CREATE OR REPLACE TRIGGER trg_prevent_baixa_persona
   BEFORE UPDATE ON persones

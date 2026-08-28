@@ -100,7 +100,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path FROM CURRENT;
 
 CREATE OR REPLACE TRIGGER trg_sync_estat_inquili_mora
   AFTER INSERT OR UPDATE ON pagaments
@@ -124,6 +124,6 @@ BEGIN
       AND data_venciment < current_date - INTERVAL '30 days'
       AND deleted_at IS NULL;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path FROM CURRENT;
 
 COMMIT;
