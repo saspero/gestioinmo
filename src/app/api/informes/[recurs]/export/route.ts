@@ -54,7 +54,7 @@ export async function GET(request: NextRequest, { params }: RouteParams): Promis
     }
 
     const pdf = buildSimplePdf(`Gestinmo — ${recursParsed.data}`, headers, rows);
-    return new NextResponse(pdf, {
+    return new NextResponse(new Uint8Array(pdf), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
