@@ -8,11 +8,7 @@ import { zodFieldErrors } from '../../../lib/validations/common';
 import { crearDespesaSchema, llistarDespesesQuerySchema } from '../../../lib/validations/despeses';
 import { crearDespesa, llistarDespeses } from '../../../lib/db/despeses';
 
-// No hi ha un Modul 'despeses' propi a src/lib/auth/rbac.ts (docs/requirements.md §2.2
-// no en defineix una fila): les despeses alimenten directament `liquidacions.total_despeses`
-// i viuen al mateix domini funcional que `pagaments` (011_tenant_despeses.sql), del qual
-// reutilitzen el nivell de permisos (Admin T, Gestor T, Comptable T).
-const MODUL = 'pagaments';
+const MODUL = 'despeses';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   return runHandler(async () => {

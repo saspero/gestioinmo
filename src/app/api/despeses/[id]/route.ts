@@ -8,9 +8,7 @@ import { uuidSchema, zodFieldErrors } from '../../../../lib/validations/common';
 import { actualitzarDespesaSchema } from '../../../../lib/validations/despeses';
 import { obtenirDespesa, actualitzarDespesa, donarBaixaDespesa } from '../../../../lib/db/despeses';
 
-// Vegeu route.ts del mateix directori: reutilitza el Modul 'pagaments' del RBAC, no
-// n'existeix un de propi per a 'despeses'.
-const MODUL = 'pagaments';
+const MODUL = 'despeses';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

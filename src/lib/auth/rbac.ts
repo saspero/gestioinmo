@@ -10,6 +10,7 @@ export type Modul =
   | 'inquilins'
   | 'contractes'
   | 'pagaments'
+  | 'despeses'
   | 'incidencies'
   | 'informes'
   | 'config_tenant';
@@ -26,6 +27,7 @@ const PERMISOS: Record<RolUsuari, Record<Modul, NivellAcces>> = {
     inquilins: 'T',
     contractes: 'T',
     pagaments: 'T',
+    despeses: 'T',
     incidencies: 'T',
     informes: 'T',
   },
@@ -36,6 +38,7 @@ const PERMISOS: Record<RolUsuari, Record<Modul, NivellAcces>> = {
     inquilins: 'T',
     contractes: 'T',
     pagaments: 'T',
+    despeses: 'T',
     incidencies: 'T',
     informes: 'L',
   },
@@ -46,6 +49,7 @@ const PERMISOS: Record<RolUsuari, Record<Modul, NivellAcces>> = {
     inquilins: 'L',
     contractes: 'L',
     pagaments: 'T',
+    despeses: 'T',
     incidencies: 'L',
     informes: 'T',
   },
