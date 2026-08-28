@@ -31,4 +31,21 @@ CREATE POLICY tenant_isolation ON public.tenant_user_sessions
     )
   );
 
+-- Auditoria de queries a nivell de base de dades (docs/db-schema.md, secció de
+-- seguretat). Complementària a la taula `auditoria` per tenant: pgaudit cobreix DDL,
+-- rols i DML fins i tot fora de l'aplicació (ex: consola SQL amb credencials de servei).
+-- Alguns entorns gestionats (Supabase) restringeixen aquesta extensió a rols sense
+-- privilegi suficient: si falla aquí, cal activar-la manualment des del panell de
+-- Supabase (Database > Extensions) o amb suport de Supabase.
+DO $$ BEGIN
+  CREATE EXTENSION IF NOT EXISTS pgaudit;
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'pgaudit no s''ha pogut activar (privilegis insuficients). Activar-lo manualment des del panell de Supabase (Database > Extensions) o amb suport de Supabase.';
+END $$;
+
 COMMIT;
+
+-- NOTA OPERATIVA (fora d'aquesta migració, no executable dins d'un bloc de transacció):
+-- un cop `pgaudit` estigui instal·lat, cal configurar `pgaudit.log = 'ddl, role, write'`
+-- via ALTER SYSTEM (requereix superusuari i recàrrega de configuració) des del panell
+-- de Supabase o amb el seu suport — vegeu docs/db-schema.md, secció de seguretat, §9.6.

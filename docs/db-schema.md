@@ -145,7 +145,7 @@ erDiagram
 | created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
 El **Portal llogater** (rol extern) **no** és un `tenant_users`: és un usuari amb
-credencials pròpies, fora d'abast d'aquesta primera passada — vegeu secció 7.
+credencials pròpies, fora d'abast d'aquesta primera passada — vegeu secció 8.
 
 ### 3.3 `public.tenant_user_sessions` — 002_auth.sql
 
@@ -213,12 +213,24 @@ L'estat es sincronitza automàticament: `vacant → ocupat` en activar-se un con
 | id | UUID PK | |
 | tipus | ENUM `tipus_persona` | `propietari`, `inquili`, `empresa` |
 | nom | TEXT NOT NULL | |
-| cognoms / nif / email / telefon / iban / adreca / notes | TEXT | |
+| cognoms / telefon / adreca / notes | TEXT | Sense xifrar |
+| nif_enc | BYTEA | NIF/CIF xifrat amb `pgcrypto` (`pgp_sym_encrypt`) — vegeu §7 |
+| nif_hash | TEXT | HMAC-SHA256 determinista del NIF, usat per cerca/unicitat (mai desxifrat) |
+| email_enc | BYTEA | Email de contacte xifrat |
+| iban_enc | BYTEA | IBAN xifrat |
 | estat_inquili | ENUM `estat_inquili` | `actiu`, `moros`, `inactiu`; `NOT NULL` només si `tipus = 'inquili'` |
 | created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
-NIF únic per tenant entre persones no donades de baixa
-(`persones_nif_actiu_unique`, índex parcial).
+`nif`, `iban` i `email` **no es guarden en clar** (§7 "Seguretat de base de dades").
+NIF únic per tenant entre persones no donades de baixa, aplicat sobre el hash
+(`persones_nif_hash_actiu_unique`, índex parcial sobre `nif_hash`) perquè el xifratge
+no és determinista i no es pot indexar/comparar per igualtat directament sobre
+`nif_enc`.
+
+> Nota: `public.tenant_users.email` (login intern) **no** es xifra — ha de romandre
+> consultable per igualtat per a l'autenticació. El camp sensible protegit aquí és
+> l'email de contacte de `persones` (propietaris/inquilins/empreses), no les
+> credencials d'accés.
 
 ### 3.7 `propietat_propietaris` — 004_persones.sql (schema de tenant)
 
@@ -391,7 +403,139 @@ SELECT cron.schedule('marcar-vencuts-tenant-xxx', '0 3 * * *',
 
 ---
 
-## 7. Abast d'aquesta passada de migracions
+## 7. Seguretat de base de dades
+
+### 7.1 Xifratge de camps sensibles (`pgcrypto`)
+
+`persones.nif`, `persones.iban` i `persones.email` es guarden xifrats
+(`nif_enc`/`iban_enc`/`email_enc`, tipus `BYTEA`) amb `pgp_sym_encrypt`/`pgp_sym_decrypt`
+de l'extensió `pgcrypto` (activada a `004_persones.sql`), usant una clau d'aplicació
+`DB_ENCRYPTION_KEY` que **no s'emmagatzema mai a la base de dades**: es passa com a
+paràmetre preparat a cada query des de `src/lib/db/persones.ts` (Agent API Engineer).
+`public.tenant_users.email` (login intern) queda **exclòs** deliberadament: ha de
+romandre consultable per igualtat per a l'autenticació.
+
+Com que `pgp_sym_encrypt` incorpora sal/IV aleatori, el mateix valor xifrat dues
+vegades produeix sortides diferents — el text xifrat no es pot indexar ni comparar per
+igualtat. Per això `nif` (l'únic dels tres amb restricció d'unicitat) porta a més
+`nif_hash`: un HMAC-SHA256 determinista (mateixa clau) usat exclusivament per a cerca i
+unicitat, mai desxifrat ni exposat.
+
+```sql
+-- escriptura (paràmetres preparats; $6 = DB_ENCRYPTION_KEY)
+INSERT INTO persones (nif_enc, nif_hash, iban_enc, email_enc, ...)
+VALUES (
+  pgp_sym_encrypt($1, $6),
+  encode(hmac($1, $6, 'sha256'), 'hex'),
+  pgp_sym_encrypt($2, $6),
+  pgp_sym_encrypt($3, $6),
+  ...
+);
+
+-- lectura (només quan el mòdul consultant té permís sobre la dada, vegeu §7.7)
+SELECT pgp_sym_decrypt(nif_enc, $1) AS nif,
+       pgp_sym_decrypt(iban_enc, $1) AS iban,
+       pgp_sym_decrypt(email_enc, $1) AS email
+  FROM persones WHERE id = $2;
+
+-- cerca/unicitat (mai per igualtat directa sobre el text xifrat)
+SELECT * FROM persones WHERE nif_hash = encode(hmac($1, $2, 'sha256'), 'hex');
+```
+
+### 7.2 Pool de connexions (driver `pg`)
+
+Configuració que ha d'aplicar `src/lib/db/pool.ts` (Agent API Engineer):
+
+| Paràmetre | Development | Staging | Production |
+|---|---|---|---|
+| `max` (connexions per instància) | 5 | 10 | 20 |
+| `idleTimeoutMillis` | 10000 | 10000 | 30000 |
+| `connectionTimeoutMillis` | 5000 | 5000 | 5000 |
+| `statement_timeout` | 10000 | 10000 | 8000 |
+
+Un únic `Pool` per procés; `pool.on('error', ...)` es registra amb `src/lib/logger.ts`
+sense tombar el procés. `statement_timeout` evita que una query lenta d'un tenant
+consumeixi recursos compartits pels altres. A producció (Vercel, serverless), la
+connexió passa pel *connection pooler* en mode *transaction* de Supabase (PgBouncer),
+no directament al port de PostgreSQL, per evitar exhaurir connexions amb invocacions
+concurrents.
+
+### 7.3 Variables d'entorn per entorn
+
+`DATABASE_URL` es divideix en tres variables explícites perquè no hi hagi ambigüitat
+sobre a quin entorn apunta cada desplegament:
+
+```bash
+# .env.example (cometre sense valors)
+DATABASE_URL_DEV=
+DATABASE_URL_STAGING=
+DATABASE_URL_PROD=
+```
+
+Es configuren com a secrets d'entorn a Vercel (Development / Preview / Production) —
+mai les tres accessibles simultàniament des del mateix desplegament.
+`src/lib/db/pool.ts` en resol una única segons `process.env.VERCEL_ENV`. Cap s'exposa
+mai com a `NEXT_PUBLIC_*`.
+
+### 7.4 Backups i point-in-time recovery (Supabase)
+
+Backups automàtics diaris a staging i producció (retenció mínima 7 i 30 dies
+respectivament). **Point-in-time recovery (PITR)** activat a producció, per revertir
+un `UPDATE`/`DELETE` erroni descobert hores després sense perdre canvis legítims
+posteriors. La restauració **mai** es fa sobre el projecte de producció en viu: es
+restaura a un projecte/branca nova, es valida l'estat (integritat de
+`contractes`/`pagaments`/`propietat_propietaris`) i només llavors es reconcilia amb les
+dades actuals, amb el propietari del producte.
+
+### 7.5 Rotació de credencials de servei
+
+Per rotar `DATABASE_URL_PROD` sense downtime: (1) crear un rol nou de PostgreSQL amb
+els mateixos privilegis, mai canviar la contrasenya del rol existent en calent;
+(2) provisionar el nou `DATABASE_URL_PROD` a Vercel sense eliminar encara l'antic;
+(3) desplegar i observar un període sense errors `28P01`/`53300`; (4) confirmar que cap
+procés —incloent `marcar_pagaments_vencuts()` programat (§6)— usa encara el rol antic
+abans de revocar-ne els privilegis. Responsabilitat compartida entre Database Engineer
+(privilegis del rol nou) i DevOps (variables d'entorn).
+
+### 7.6 Auditoria de queries (`pgaudit`)
+
+`010_rls.sql` intenta activar l'extensió `pgaudit` (`CREATE EXTENSION IF NOT EXISTS
+pgaudit`, protegit amb un bloc que capta `insufficient_privilege` sense trencar la
+migració si l'entorn gestionat ho restringeix). Un cop instal·lada, cal configurar
+`pgaudit.log = 'ddl, role, write'` via `ALTER SYSTEM` (requereix superusuari i recàrrega
+de configuració — **no és executable dins d'una transacció de migració**; es fa des del
+panell de Supabase, Database → Extensions/Settings, o amb suport de Supabase).
+
+`pgaudit` registra DDL, canvis de rols/permisos i DML sobre taules sensibles
+(`persones`, `contractes`, `pagaments`, `public.tenant_users`,
+`public.tenant_user_sessions`) a nivell de base de dades, incloent accessos fora de
+l'aplicació (ex: consola SQL amb credencials de servei). És **complementari, no
+substitutiu**, de la taula `auditoria` per tenant (§3.15): aquella registra canvis de
+negoci amb valor anterior/posterior a nivell de fila generats només des de l'aplicació;
+`pgaudit` cobreix l'accés a la base de dades en si.
+
+### 7.7 Llista negra de camps (logs i respostes d'API)
+
+Els camps següents no apareixen mai, en cap forma, en logs d'aplicació, missatges
+d'error ni respostes d'API que no els hagin sol·licitat explícitament amb permisos
+adequats:
+
+| Camp | Ubicació | Motiu |
+|---|---|---|
+| `password_hash` | `public.tenant_users` | Mai surt de `src/lib/auth/` |
+| `iban_enc` (desxifrat) | `persones` | Dada bancària; només per a qui té permís explícit sobre Propietaris/Pagaments |
+| `nif_enc`/`nif_hash` (desxifrat) | `persones` | Dada personal identificativa (RGPD) |
+| `JWT_SECRET` | variable d'entorn | Compromet tota l'autenticació del tenant |
+| `DB_ENCRYPTION_KEY` | variable d'entorn | Compromet el xifratge de totes les agències |
+| `DATABASE_URL_DEV`/`_STAGING`/`_PROD` | variable d'entorn | Credencials de connexió a BD |
+
+Ho apliquen l'API Engineer (mai serialitzar aquests camps a la resposta), l'Auth
+Specialist (el logger mai rep el `password_hash` ni el JWT sencer) i ho verifica el
+Code Reviewer (`docs/agents/AGENT_REVIEWER.md` §3).
+
+---
+
+## 8. Abast d'aquesta passada de migracions
 
 El mòdul **3.9 Portal del llogater** dels requisits està marcat com a *fase final* tant
 a `docs/requirements.md` com a `CLAUDE.md` (mòdul 9, últim de la seqüència de
@@ -406,7 +550,7 @@ requereix taules pròpies — les seves queries es construeixen sobre les taules
 
 ---
 
-## 8. Guia ràpida de `search_path` per a queries d'aplicació
+## 9. Guia ràpida de `search_path` per a queries d'aplicació
 
 ```ts
 // src/lib/db/*.ts (Agent API Engineer) — exemple de patró esperat
@@ -424,8 +568,12 @@ d'usar-lo amb `format()`/concatenació segura, per evitar injecció d'identifica
 
 ## Criteris de completesa (autoverificació)
 
-- [x] Totes les entitats de `docs/requirements.md` dels mòduls 1–8 tenen taula corresponent (mòdul 9 deferit, vegeu §7)
+- [x] Totes les entitats de `docs/requirements.md` dels mòduls 1–8 tenen taula corresponent (mòdul 9 deferit, vegeu §8)
 - [x] Tots els ENUMs estan definits i coincideixen amb els estats dels requisits
 - [x] El constraint d'unicitat de contracte actiu per unitat existeix (`contractes_unitat_actiu_idx`)
 - [x] Totes les migracions són idempotents (`IF NOT EXISTS`, `DO $$ ... EXCEPTION WHEN duplicate_object`, `CREATE OR REPLACE TRIGGER/FUNCTION`)
 - [x] `docs/db-schema.md` reflecteix l'esquema final generat
+- [x] `nif`, `iban` i `email` de `persones` estan xifrats amb `pgcrypto`, amb `nif_hash` com a hash determinista per a cerca/unicitat
+- [x] El pool de connexions `pg`, les variables `DATABASE_URL_*` per entorn, la política de backups/PITR i el procediment de rotació de credencials estan documentats (§7)
+- [x] `pgaudit` s'intenta activar a `010_rls.sql` (amb fallback documentat si l'entorn ho restringeix) i la seva configuració (`pgaudit.log`) queda documentada com a pas manual
+- [x] La llista negra de camps sensibles (§7.7) està documentada i assignada als agents responsables de complir-la
