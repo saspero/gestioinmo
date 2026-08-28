@@ -2,38 +2,24 @@
 // cap altre fitxer del projecte fixa `search_path` ni les variables `app.tenant_id` /
 // `app.current_user_id` manualment.
 //
-// Nota d'abast: aquest pool és propietat de l'Auth Specialist i només l'usen les
-// consultes del propi mòdul (`session.ts`) contra les taules globals `public.tenants` /
-// `public.tenant_users` / `public.tenant_user_sessions`. El pool de domini per a
-// `src/lib/db/[modul].ts` (amb la configuració per entorn de docs/db-schema.md §7.2-7.3)
-// és responsabilitat de l'Agent API Engineer i viu fora d'aquest directori.
+// El `Pool` es demana a `src/lib/db/pool.ts` (`getDomainPool`), que resol
+// DATABASE_URL_DEV/DATABASE_URL_STAGING/DATABASE_URL_PROD segons l'entorn en lloc d'una
+// única `DATABASE_URL`. Auth i domini comparteixen així el mateix pool físic per procés;
+// aquest mòdul ja no en crea un de propi.
+//
+// Nota: `getDomainPool` resol l'entorn a partir de `VERCEL_ENV`, no de `NODE_ENV`
+// (vegeu `src/lib/db/pool.ts::resolveEnv`) — fora de l'abast d'aquest fitxer.
 
-import { Pool, type PoolClient } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { z } from 'zod';
+import { getDomainPool } from '../db/pool';
 import type { JwtPayload } from './jwt';
 
 const uuidSchema = z.string().uuid();
 
-let pool: Pool | undefined;
-
-function getPool(): Pool {
-  if (!pool) {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error('DATABASE_URL no configurada.');
-    }
-    pool = new Pool({ connectionString });
-    pool.on('error', (err) => {
-      // Evita tombar el procés per un error de connexió inactiva del pool.
-      console.error('Error inesperat al pool de connexions (auth):', err);
-    });
-  }
-  return pool;
-}
-
-/** Pool compartit pel mòdul d'auth (`session.ts`) per a consultes sobre `public.*`. */
+/** Pool compartit (`src/lib/db/pool.ts`) per a les consultes globals de `session.ts`. */
 export function getAuthPool(): Pool {
-  return getPool();
+  return getDomainPool();
 }
 
 /**
@@ -53,7 +39,7 @@ export async function withTenantContext<T>(
   const tenantId = uuidSchema.parse(payload.tenant_id);
   const currentUserId = uuidSchema.parse(payload.sub);
 
-  const client = await getPool().connect();
+  const client = await getDomainPool().connect();
   try {
     await client.query('BEGIN');
     await client.query("SELECT set_config('search_path', $1, true)", [`tenant_${tenantId}, public`]);
