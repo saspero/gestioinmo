@@ -20,12 +20,24 @@ const AUTH_COOKIE_NAME = 'gestinmo_session';
 
 const LOGIN_PATH = '/login';
 
+/**
+ * Headers interns via els quals el middleware propaga la identitat ja verificada als
+ * route handlers (`docs/architecture.md` §7.4: reben el payload del JWT ja verificat,
+ * no el re-verifiquen). Sobreescrits sempre aquí — mai llegits d'una petició entrant —
+ * perquè un client no els pugui falsificar.
+ */
+const TENANT_ID_HEADER = 'x-tenant-id';
+const USER_ID_HEADER = 'x-user-id';
+
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const payload = token ? await verifyToken(token) : null;
 
   if (payload) {
-    return NextResponse.next();
+    const headers = new Headers(request.headers);
+    headers.set(TENANT_ID_HEADER, payload.tenant_id);
+    headers.set(USER_ID_HEADER, payload.sub);
+    return NextResponse.next({ request: { headers } });
   }
 
   const { pathname } = request.nextUrl;
