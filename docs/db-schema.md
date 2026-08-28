@@ -104,12 +104,16 @@ erDiagram
   INCIDENCIES ||--o{ INCIDENCIA_ADJUNTS : "té"
   TENANT_USERS ||--o{ INCIDENCIES : "assignat a"
   TENANT_USERS ||--o{ AUDITORIA : "autor de"
+  PROPIETATS ||--o{ DESPESES : "genera"
+  UNITATS ||--o{ DESPESES : "imputable a"
+  INCIDENCIES ||--o{ DESPESES : "origina"
 ```
 
 `PROPIETATS`, `UNITATS`, `PERSONES`, `PROPIETAT_PROPIETARIS`, `CONTRACTES`,
 `CONTRACTE_INQUILINS`, `REMESES`, `PAGAMENTS`, `LIQUIDACIONS`, `INCIDENCIES`,
-`INCIDENCIA_COMENTARIS`, `INCIDENCIA_ADJUNTS` i `AUDITORIA` viuen dins de cada schema
-`tenant_{uuid}`. `TENANTS`, `TENANT_USERS` i `TENANT_USER_SESSIONS` viuen a `public`.
+`INCIDENCIA_COMENTARIS`, `INCIDENCIA_ADJUNTS`, `AUDITORIA` i `DESPESES` viuen dins de
+cada schema `tenant_{uuid}`. `TENANTS`, `TENANT_USERS` i `TENANT_USER_SESSIONS` viuen a
+`public`.
 
 ---
 
@@ -332,6 +336,27 @@ de nova referenciant l'anterior.
 Autor opcional com a `persones` (ex: llogater) o `public.tenant_users` (ex: gestor); com
 a mínim un dels dos ha d'estar informat (`incidencia_comentaris_check_autor`).
 
+### 3.15b `despeses` — 011_tenant_despeses.sql (schema de tenant)
+
+| Camp | Tipus | Notes |
+|---|---|---|
+| id | UUID PK | |
+| propietat_id | UUID FK → propietats | `ON DELETE RESTRICT` |
+| unitat_id | UUID FK → unitats | Opcional, per a despeses imputables a una unitat concreta |
+| incidencia_id | UUID FK → incidencies | Opcional, quan la despesa prové de resoldre una incidència |
+| categoria | ENUM `categoria_despesa` | `manteniment`, `subministraments`, `assegurances`, `impostos`, `comunitat`, `gestoria`, `altres` |
+| concepte | TEXT NOT NULL | |
+| import | NUMERIC(10,2) | `> 0` |
+| data_despesa | DATE NOT NULL | |
+| proveidor | TEXT | |
+| factura_url | TEXT | |
+| repercutible_propietari | BOOLEAN NOT NULL DEFAULT true | Si compta com a despesa a descomptar a `liquidacions.total_despeses` (§3.12) |
+| notes | TEXT | |
+| created_at / updated_at / deleted_at | TIMESTAMPTZ | Soft delete |
+
+Reutilitza `update_updated_at()` (003_propietats.sql) i `registra_auditoria()`
+(008_auditoria.sql), ja definides per tenant: cap funció nova.
+
 ### 3.15 `auditoria` — 008_auditoria.sql (schema de tenant)
 
 | Camp | Tipus |
@@ -365,6 +390,7 @@ Alimentada automàticament per triggers `AFTER INSERT OR UPDATE OR DELETE` a
 | `prioritat_incidencia` | tenant | baixa, normal, alta, urgent |
 | `estat_incidencia` | tenant | oberta, assignada, en_curs, resolta |
 | `accio_auditoria` | tenant | insert, update, delete |
+| `categoria_despesa` | tenant | manteniment, subministraments, assegurances, impostos, comunitat, gestoria, altres |
 
 Els ENUMs de schema "tenant" es creen un cop per cada `tenant_{uuid}` (search_path
 actiu en el moment de la migració), no hi ha una única còpia global.
