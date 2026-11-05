@@ -33,6 +33,7 @@ export interface LoginMeta {
 export type LoginResult =
   | { ok: true; token: string; payload: JwtPayload }
   | { ok: false; reason: 'invalid_credentials' }
+  | { ok: false; reason: 'account_disabled' }
   | { ok: false; reason: 'account_locked'; lockedUntil: Date };
 
 // Calculat de forma perezosa un únic cop per procés: permet comparar contra un hash
@@ -71,10 +72,18 @@ export async function login(email: string, plainPassword: string, meta: LoginMet
 
   const user = rows[0];
 
-  if (!user || !user.actiu) {
+  if (!user) {
     await verifyPassword(plainPassword, await getDummyHash());
-    console.warn('[auth] login rebutjat: usuari inexistent o desactivat', { email });
+    console.warn('[auth] login rebutjat: usuari inexistent', { email });
     return { ok: false, reason: 'invalid_credentials' };
+  }
+
+  // El missatge específic de docs/ux-flows.md §3.1 només es mostra amb la contrasenya
+  // correcta: sense ella, un compte desactivat no es distingeix d'un d'inexistent.
+  if (!user.actiu) {
+    const valid = await verifyPassword(plainPassword, user.password_hash);
+    console.warn('[auth] login rebutjat: usuari desactivat', { email });
+    return { ok: false, reason: valid ? 'account_disabled' : 'invalid_credentials' };
   }
 
   if (user.bloquejat_fins && user.bloquejat_fins.getTime() > Date.now()) {
