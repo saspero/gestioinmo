@@ -164,15 +164,24 @@ Cada agent llegeix els outputs de l'anterior abans de generar res. Mai modificar
 
 ```bash
 # .env.local (mai cometre)
-DATABASE_URL=postgresql://...
+DATABASE_URL_DEV=postgresql://...
 JWT_SECRET=...
+DB_ENCRYPTION_KEY=...
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # .env.example (cometre sense valors)
-DATABASE_URL=
+DATABASE_URL_DEV=
+DATABASE_URL_STAGING=
+DATABASE_URL_PROD=
 JWT_SECRET=
+DB_ENCRYPTION_KEY=
 NEXT_PUBLIC_APP_URL=
+VERCEL_ENV=
 ```
+
+`src/lib/db/pool.ts` tria la URL segons `VERCEL_ENV`: producció usa `DATABASE_URL_PROD` i
+preview usa `DATABASE_URL_STAGING`. Canviar `DB_ENCRYPTION_KEY` fa illegibles les dades
+xifrades existents.
 
 ---
 
@@ -193,10 +202,27 @@ Si estàs llegint aquest fitxer com a agent de Claude Code:
 | Fase | Estat |
 |---|---|
 | Definició d'agents | ✅ Completat |
-| Requirements | ⏳ Pendent |
-| Arquitectura | ⏳ Pendent |
-| BDD / Migracions | ⏳ Pendent |
-| Auth | ⏳ Pendent |
-| Mòduls funcionals | ⏳ Pendent |
-| Tests | ⏳ Pendent |
-| Deploy | ⏳ Pendent |
+| Requirements | ✅ Completat |
+| Arquitectura | ✅ Completat |
+| BDD / Migracions | ✅ Completat (`012` pendent d'aplicar a Supabase) |
+| Auth | ✅ Login, logout, sessions, RBAC i alta de tenants. Falta: renovació de JWT, canvi i recuperació de contrasenya |
+| Mòduls funcionals | 🟡 Mòduls 1-8 fets. Falta: documents adjunts, persona jurídica i liquidacions de propietaris |
+| Tests | 🟡 `src/lib` cobert (unitaris + integració amb PostgreSQL real). Falten components i route handlers |
+| Deploy | ⏳ Pendent de variables d'entorn a Vercel i de la migració `012` |
+| Portal del llogater | ⏳ Pendent (última fase) |
+
+### Alta d'una agència
+
+```bash
+npm run tenant:create -- --slug demo --nom "Agència Demo" --email admin@exemple.cat --admin-nom Anna
+```
+
+Si el slug ja existeix, només hi afegeix l'administrador. Sense `TENANT_ADMIN_PASSWORD`,
+genera una contrasenya i la mostra un únic cop. Cal una connexió directa o de session
+pooler a `.env.local`, no el transaction pooler de Supabase.
+
+### Tests d'integració
+
+Corren amb `TEST_DATABASE_URL` apuntant a un PostgreSQL amb permisos per crear bases de
+dades (a CI, el servei del workflow). Sense aquesta variable se salten i la cobertura
+queda per sota del llindar.
