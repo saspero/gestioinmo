@@ -1,1 +1,20 @@
+# dependencies
 node_modules
+
+# next.js
+.next
+out
+
+# env (mai cometre secrets; .env.example sí)
+.env
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# testing
+coverage
+
+# misc
+.vercel
+.DS_Store

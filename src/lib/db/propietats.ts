@@ -78,6 +78,47 @@ export async function obtenirPropietat(client: PoolClient, id: string): Promise<
   return rows[0] ?? null;
 }
 
+export interface TitularPropietat {
+  personaId: string;
+  nom: string;
+  percentatge: number;
+}
+
+export async function llistarTitulars(client: PoolClient, propietatId: string): Promise<TitularPropietat[]> {
+  const { rows } = await client.query<TitularPropietat>(
+    `SELECT pp.persona_id AS "personaId", concat_ws(' ', pe.nom, pe.cognoms) AS nom,
+            pp.percentatge::float8 AS percentatge
+       FROM propietat_propietaris pp
+       JOIN persones pe ON pe.id = pp.persona_id
+      WHERE pp.propietat_id = $1
+      ORDER BY pp.created_at`,
+    [propietatId]
+  );
+  return rows;
+}
+
+export interface PropietatDePropietari {
+  propietatId: string;
+  referencia: string;
+  adreca: string;
+  percentatge: number;
+}
+
+export async function llistarPropietatsDePropietari(
+  client: PoolClient,
+  personaId: string
+): Promise<PropietatDePropietari[]> {
+  const { rows } = await client.query<PropietatDePropietari>(
+    `SELECT p.id AS "propietatId", p.referencia, p.adreca, pp.percentatge::float8 AS percentatge
+       FROM propietat_propietaris pp
+       JOIN propietats p ON p.id = pp.propietat_id
+      WHERE pp.persona_id = $1 AND p.deleted_at IS NULL
+      ORDER BY p.referencia`,
+    [personaId]
+  );
+  return rows;
+}
+
 async function substituirTitulars(
   client: PoolClient,
   propietatId: string,

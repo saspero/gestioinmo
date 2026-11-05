@@ -43,8 +43,14 @@ o qualifica les taules amb el schema explícit."*
 
 ### 1.2 Provisioning d'un tenant nou
 
-Seqüència que ha d'implementar l'agent API/Auth a `src/lib/db/tenants.ts` (fora de
-l'abast d'aquest agent):
+Implementat a `src/lib/db/tenants.ts` i invocat amb `npm run tenant:create`. El
+`search_path` inclou també `extensions`, on `012_extensions_schema.sql` centralitza
+`pgcrypto` i `pg_trgm`: les extensions són úniques per base de dades i, creades des d'un
+tenant, quedarien dins el seu schema i fora de l'abast de la resta. Aquesta migració és
+global i s'ha d'aplicar abans de provisionar. Darrere de `009_indexes.sql` també
+s'executa `011_tenant_despeses.sql`.
+
+Seqüència:
 
 ```sql
 -- 1. Alta del tenant (schema public)

@@ -28,7 +28,12 @@ export const crearPropietatSchema = z.object({
 });
 export type CrearPropietat = z.infer<typeof crearPropietatSchema>;
 
-export const actualitzarPropietatSchema = crearPropietatSchema.partial();
+// Zod 4 aplica `.default()` encara que el camp sigui opcional: sense redefinir aquests
+// dos camps, qualsevol PATCH parcial reescriuria `tipus` i `ascensor` amb el valor per defecte.
+export const actualitzarPropietatSchema = crearPropietatSchema.partial().extend({
+  tipus: tipusPropietatEnum.optional(),
+  ascensor: z.boolean().optional(),
+});
 export type ActualitzarPropietat = z.infer<typeof actualitzarPropietatSchema>;
 
 export const llistarPropietatsQuerySchema = paginationQuerySchema.extend({

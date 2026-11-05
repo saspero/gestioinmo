@@ -1,0 +1,211 @@
+// @vitest-environment node
+//
+// Integració contra PostgreSQL real: els errors que cobreix (extensions per tenant,
+// paràmetres no tipats, triggers diferits) no es poden detectar amb `pg` mockejat.
+
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { PoolClient } from 'pg';
+import { login, createSession, isSessionActive, revokeAllSessions, revokeSession } from '@/lib/auth/session';
+import { withTenantContext } from '@/lib/auth/tenant-context';
+import { verifyToken } from '@/lib/auth/jwt';
+import { getDomainPool } from '@/lib/db/pool';
+import {
+  actualitzarPersona,
+  crearPersona,
+  donarBaixaPersona,
+  llistarPersones,
+  obtenirPersona,
+} from '@/lib/db/persones';
+import {
+  actualitzarPropietat,
+  crearPropietat,
+  llistarPropietatsDePropietari,
+  llistarTitulars,
+} from '@/lib/db/propietats';
+import { obtenirContextUsuari, provisionarTenant } from '@/lib/db/tenants';
+import {
+  actualitzarTenantConfig,
+  canviarEstatUsuari,
+  crearUsuari,
+  llistarUsuaris,
+  obtenirTenantConfig,
+} from '@/lib/db/usuaris';
+import { actualitzarPropietatSchema, crearPropietatSchema } from '@/lib/validations/propietats';
+import { crearBdTest } from '../helpers/test-db';
+
+const adminUrl = process.env.TEST_DATABASE_URL;
+const PASSWORD = 'contrasenya-de-prova';
+const QUERY = { page: 1, pageSize: 20, order: 'asc' as const };
+
+describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
+  let eliminar: () => Promise<void>;
+  let tenantA: string;
+  let tenantB: string;
+  let sessioA: { tenant_id: string; sub: string };
+  let sessioB: { tenant_id: string; sub: string };
+
+  const comA = <T,>(fn: (client: PoolClient) => Promise<T>) => withTenantContext(sessioA, fn);
+  const comB = <T,>(fn: (client: PoolClient) => Promise<T>) => withTenantContext(sessioB, fn);
+
+  async function idUsuari(email: string): Promise<string> {
+    const { rows } = await getDomainPool().query('SELECT id FROM public.tenant_users WHERE email = $1', [email]);
+    return rows[0].id;
+  }
+
+  beforeAll(async () => {
+    const bd = await crearBdTest(adminUrl!);
+    eliminar = bd.eliminar;
+    process.env.DATABASE_URL_DEV = bd.url;
+
+    const admin = (email: string) => ({ email, nom: 'Admin', password: PASSWORD });
+    tenantA = (await provisionarTenant({ nom: 'Agència A', slug: 'a', admin: admin('a@test.cat') })).tenantId;
+    tenantB = (await provisionarTenant({ nom: 'Agència B', slug: 'b', admin: admin('b@test.cat') })).tenantId;
+    sessioA = { tenant_id: tenantA, sub: await idUsuari('a@test.cat') };
+    sessioB = { tenant_id: tenantB, sub: await idUsuari('b@test.cat') };
+  }, 60_000);
+
+  afterAll(async () => {
+    await getDomainPool().end();
+    await eliminar();
+  });
+
+  it('provisiona el segon tenant i reutilitza un slug existent', async () => {
+    expect(tenantB).not.toBe(tenantA);
+    const repetit = await provisionarTenant({
+      nom: 'Ignorat',
+      slug: 'a',
+      admin: { email: 'a2@test.cat', nom: 'Segon', password: PASSWORD },
+    });
+    expect(repetit).toEqual({ tenantId: tenantA, tenantNou: false });
+  });
+
+  it('xifra, desxifra i llista persones a cada tenant', async () => {
+    const persona = await comB((c) => crearPersona(c, 'propietari', { nom: 'Marta', nif: '12345678Z', iban: 'ES12' }));
+    expect(persona).toMatchObject({ nom: 'Marta', nif: '12345678Z', iban: 'ES12' });
+
+    const { data, meta } = await comB((c) => llistarPersones(c, 'propietari', QUERY));
+    expect(data).toHaveLength(1);
+    expect(meta.total).toBe(1);
+
+    const filtrat = await comB((c) => llistarPersones(c, 'propietari', { ...QUERY, q: 'cap-coincidencia' }));
+    expect(filtrat.meta.total).toBe(0);
+
+    const actualitzada = await comB((c) => actualitzarPersona(c, persona.id, 'propietari', { telefon: '600' }));
+    expect(actualitzada?.telefon).toBe('600');
+  });
+
+  it("no deixa veure ni escriure dades d'un altre tenant", async () => {
+    const persona = await comA((c) => crearPersona(c, 'propietari', { nom: 'Només A' }));
+    expect(await comB((c) => obtenirPersona(c, persona.id, 'propietari'))).toBeNull();
+    expect(await comB((c) => donarBaixaPersona(c, persona.id, 'propietari'))).toBe(false);
+    expect(await comA((c) => obtenirPersona(c, persona.id, 'propietari'))).not.toBeNull();
+  });
+
+  it('exigeix que els titulars sumin 100% i conserva la resta de camps', async () => {
+    const pere = await comA((c) => crearPersona(c, 'propietari', { nom: 'Pere' }));
+    const anna = await comA((c) => crearPersona(c, 'propietari', { nom: 'Anna' }));
+    const propietat = await comA((c) =>
+      crearPropietat(c, crearPropietatSchema.parse({ referencia: 'P-1', tipus: 'edifici', adreca: 'Major', ascensor: true }))
+    );
+
+    await expect(
+      comA((c) =>
+        actualitzarPropietat(
+          c,
+          propietat.id,
+          actualitzarPropietatSchema.parse({ titulars: [{ personaId: pere.id, percentatge: 60 }] })
+        )
+      )
+    ).rejects.toThrow(/100/);
+
+    const desada = await comA((c) =>
+      actualitzarPropietat(
+        c,
+        propietat.id,
+        actualitzarPropietatSchema.parse({
+          titulars: [
+            { personaId: pere.id, percentatge: 70 },
+            { personaId: anna.id, percentatge: 30 },
+          ],
+        })
+      )
+    );
+    expect(desada).toMatchObject({ tipus: 'edifici', ascensor: true });
+
+    const titulars = await comA((c) => llistarTitulars(c, propietat.id));
+    expect(titulars.map((t) => t.percentatge).sort()).toEqual([30, 70]);
+    expect(await comA((c) => llistarPropietatsDePropietari(c, pere.id))).toMatchObject([
+      { referencia: 'P-1', percentatge: 70 },
+    ]);
+
+    await expect(comA((c) => donarBaixaPersona(c, pere.id, 'propietari'))).rejects.toThrow(/propietats associades/);
+  });
+
+  describe('login', () => {
+    it('accepta les credencials correctes i registra la sessió', async () => {
+      const result = await login('b@test.cat', PASSWORD, { ipAddress: '127.0.0.1', userAgent: 'vitest' });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.payload.tenant_id).toBe(tenantB);
+      expect(await isSessionActive(result.payload.jti)).toBe(true);
+
+      await revokeSession(result.payload.jti);
+      expect(await isSessionActive(result.payload.jti)).toBe(false);
+    });
+
+    it("no distingeix un usuari inexistent d'una contrasenya incorrecta", async () => {
+      expect(await login('ningu@test.cat', PASSWORD)).toEqual({ ok: false, reason: 'invalid_credentials' });
+      expect(await login('b@test.cat', 'incorrecta')).toEqual({ ok: false, reason: 'invalid_credentials' });
+    });
+
+    it('bloqueja després de 5 intents, encara que la contrasenya sigui bona', async () => {
+      await crearUsuari(tenantA, { email: 'lock@test.cat', nom: 'Lock', rol: 'gestor' }, await hashDe('a@test.cat'));
+      for (let i = 0; i < 5; i += 1) await login('lock@test.cat', 'incorrecta');
+      expect(await login('lock@test.cat', PASSWORD)).toMatchObject({ ok: false, reason: 'account_locked' });
+    }, 30_000);
+
+    it('només revela que un compte està desactivat amb la contrasenya correcta', async () => {
+      await crearUsuari(tenantA, { email: 'off@test.cat', nom: 'Off', rol: 'gestor' }, await hashDe('a@test.cat'));
+      const id = await idUsuari('off@test.cat');
+      expect(await canviarEstatUsuari(tenantA, id, false)).toBe(true);
+
+      expect(await login('off@test.cat', PASSWORD)).toEqual({ ok: false, reason: 'account_disabled' });
+      expect(await login('off@test.cat', 'incorrecta')).toEqual({ ok: false, reason: 'invalid_credentials' });
+      expect(await obtenirContextUsuari(tenantA, id)).toBeNull();
+    });
+
+    it('revoca totes les sessions d’un usuari', async () => {
+      const { token } = await createSession({ id: sessioB.sub, tenantId: tenantB, rol: 'admin' }, {}, 60);
+      const payload = await verifyToken(token);
+      await revokeAllSessions(sessioB.sub);
+      expect(await isSessionActive(payload!.jti)).toBe(false);
+    });
+  });
+
+  describe('configuració', () => {
+    it("desa les dades de l'agència sense perdre la resta de configuració", async () => {
+      await getDomainPool().query(`UPDATE public.tenants SET configuracio = '{"altre": 1}' WHERE id = $1`, [tenantB]);
+      await actualitzarTenantConfig(tenantB, { nom: 'Nova', nif: 'B1', adreca: undefined, jwtExpiracioMinuts: 30 });
+
+      expect(await obtenirTenantConfig(tenantB)).toEqual({ nom: 'Nova', nif: 'B1', adreca: '', jwtExpiracioMinuts: 30 });
+      const { rows } = await getDomainPool().query('SELECT configuracio FROM public.tenants WHERE id = $1', [tenantB]);
+      expect(rows[0].configuracio.altre).toBe(1);
+    });
+
+    it('rebutja un email en ús a qualsevol tenant', async () => {
+      await expect(
+        crearUsuari(tenantB, { email: 'a@test.cat', nom: 'Dup', rol: 'gestor' }, 'hash')
+      ).rejects.toThrow('ja està en ús');
+    });
+
+    it("no permet canviar l'estat d'un usuari d'un altre tenant", async () => {
+      expect(await canviarEstatUsuari(tenantB, sessioA.sub, false)).toBe(false);
+      expect((await llistarUsuaris(tenantB)).every((usuari) => usuari.id !== sessioA.sub)).toBe(true);
+    });
+  });
+
+  async function hashDe(email: string): Promise<string> {
+    const { rows } = await getDomainPool().query('SELECT password_hash FROM public.tenant_users WHERE email = $1', [email]);
+    return rows[0].password_hash;
+  }
+});
