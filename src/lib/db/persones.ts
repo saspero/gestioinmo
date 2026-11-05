@@ -5,6 +5,7 @@
 // per a la clau perquè els SELECT amb columnes desxifrades siguin consistents.
 
 import type { PoolClient } from 'pg';
+import { BusinessRuleError } from './business-error';
 import { buildLimitOffsetClause, buildOrderByClause, buildMeta } from './pagination';
 import type { LlistarPersonesQuery, ActualitzarPersona } from '../validations/persones';
 
@@ -72,9 +73,11 @@ export async function llistarPersones(
     `SELECT ${PERSONA_COLUMNS} FROM persones ${where} ${orderBy} ${limitOffset}`,
     [...values, ...limitOffsetValues]
   );
+  // El recompte no desxifra res, però `where` numera els filtres a partir de `$2`:
+  // `$1` s'ha de declarar igualment i va a NULL perquè la clau no viatgi sense necessitat.
   const { rows: countRows } = await client.query<{ total: string }>(
-    `SELECT count(*)::text AS total FROM persones ${where}`,
-    values
+    `SELECT count(*)::text AS total FROM persones ${where} AND $1::text IS NULL`,
+    [null, ...values.slice(1)]
   );
 
   return { data: rows, meta: buildMeta(query, Number(countRows[0]?.total ?? 0)) };
@@ -175,14 +178,32 @@ export async function actualitzarPersona(
   }
 
   values.push(id, tipus);
+  // `$1::text` tipa la clau quan només s'actualitzen camps no xifrats i ningú més la usa.
   await client.query(
-    `UPDATE persones SET ${sets.join(', ')} WHERE id = $${values.length - 1} AND tipus = $${values.length} AND deleted_at IS NULL`,
+    `UPDATE persones SET ${sets.join(', ')}
+      WHERE id = $${values.length - 1} AND tipus = $${values.length} AND deleted_at IS NULL AND $1::text IS NOT NULL`,
     values
   );
   return obtenirPersona(client, id, tipus);
 }
 
 export async function donarBaixaPersona(client: PoolClient, id: string, tipus: TipusPersona): Promise<boolean> {
+  if (tipus === 'propietari') {
+    const { rows } = await client.query(
+      `SELECT 1
+         FROM propietat_propietaris pp
+         JOIN propietats p ON p.id = pp.propietat_id
+        WHERE pp.persona_id = $1 AND p.deleted_at IS NULL
+        LIMIT 1`,
+      [id]
+    );
+    if (rows.length > 0) {
+      throw new BusinessRuleError(
+        'No es pot donar de baixa aquest propietari: encara té propietats associades. Elimina primer la seva titularitat o transfereix-la.'
+      );
+    }
+  }
+
   const { rowCount } = await client.query(
     'UPDATE persones SET deleted_at = now() WHERE id = $1 AND tipus = $2 AND deleted_at IS NULL',
     [id, tipus]

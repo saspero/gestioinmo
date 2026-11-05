@@ -31,6 +31,9 @@ export function getAuthPool(): Pool {
  * en lloc de `SET LOCAL search_path TO $1`, perquè `SET` no accepta paràmetres
  * vinculats (bind parameters) del driver `pg` — `set_config` és una funció normal i sí
  * els accepta, evitant qualsevol concatenació de strings a la sentència SQL.
+ *
+ * `extensions` és on viuen `pgcrypto` i `pg_trgm` (migració 012): sense aquest schema,
+ * `pgp_sym_encrypt`/`pgp_sym_decrypt` de `src/lib/db/persones.ts` no es resolen.
  */
 export async function withTenantContext<T>(
   payload: Pick<JwtPayload, 'tenant_id' | 'sub'>,
@@ -42,7 +45,7 @@ export async function withTenantContext<T>(
   const client = await getDomainPool().connect();
   try {
     await client.query('BEGIN');
-    await client.query("SELECT set_config('search_path', $1, true)", [`tenant_${tenantId}, public`]);
+    await client.query("SELECT set_config('search_path', $1, true)", [`tenant_${tenantId}, public, extensions`]);
     await client.query("SELECT set_config('app.tenant_id', $1, true)", [tenantId]);
     await client.query("SELECT set_config('app.current_user_id', $1, true)", [currentUserId]);
 
