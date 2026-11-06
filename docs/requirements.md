@@ -179,7 +179,7 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 
 **Restriccions:**
 - Una unitat només pot tenir un contracte en estat `actiu` simultàniament (un mateix inquilí sí que pot tenir diversos contractes actius, un per unitat diferent — vegeu 3.4).
-- Els límits de fiança depenen del tipus d'ús del contracte: als contractes d'**habitatge**, la fiança mínima és una mensualitat de renda i la màxima, dues; als contractes d'**altres usos** (local, parking, industrial, etc.) els límits es pacten lliurement entre les parts i poden diferir dels d'habitatge (el sistema no aplica el topall de dues mensualitats en aquests casos, però permet configurar un mínim/màxim propi per tipus d'ús a nivell de tenant).
+- La fiança es paga a l'inici del contracte i és una negociació entre arrendador i llogater: per defecte és una mensualitat de la renda inicial, però l'import es pot canviar lliurement i el sistema no hi aplica cap mínim ni màxim, sigui quin sigui l'ús del contracte.
 - No es pot activar un contracte si la unitat ja té un altre contracte actiu.
 - La resolució d'un contracte allibera la unitat (torna a `disponible`) i tanca l'estat de mora associat si no hi ha deute pendent.
 
@@ -317,7 +317,7 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 
 3. **La renda s'actualitza anualment per IPC (o índex pactat al contracte).** Ex: un contracte amb data d'inici 1 de març i índex IPC actualitza automàticament la renda cada 1 de març segons la variació interanual de l'IPC publicada.
 
-4. **La fiança mínima i màxima depenen del tipus d'ús del contracte.** Ex: per a un contracte d'**habitatge** amb renda de 800€/mes, la fiança vàlida ha d'estar entre 800€ i 1.600€ (una a dues mensualitats); el sistema rebutja valors fora d'aquest rang. Per a un contracte de **local comercial** o **parking**, els límits no venen fixats per aquesta regla i es configuren segons el que pactin les parts (ex: dues mensualitats mínimes sense topall màxim, habitual en lloguer d'ús diferent d'habitatge).
+4. **La fiança es pacta a l'inici del contracte i no va vinculada a la renda vigent.** Ex: amb una renda de 600€/mes, la fiança proposada és de 600€ (una mensualitat), però les parts en poden pactar una altra. Les actualitzacions de renda per IPC (regla #3) no modifiquen la fiança.
 
 5. **Un pagament vençut > 30 dies activa l'estat de mora a l'inquilí.** Ex: si el rebut de gener (venciment 5 de gener) no consta com a cobrat el 4 de febrer, l'inquilí passa automàticament a l'estat `moros`, visible al seu perfil i als informes.
 

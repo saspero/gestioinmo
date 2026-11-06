@@ -22,7 +22,6 @@ const RAISE_EXCEPTION_CODE = 'P0001';
 const CONSTRAINT_MESSAGES: Record<string, string> = {
   contractes_unitat_actiu_idx:
     "Aquesta unitat ja té un contracte actiu. Cal finalitzar-lo o resoldre'l abans d'activar-ne un altre.",
-  contractes_check_fianca_habitatge: "Per a contractes d'habitatge, la fiança ha d'estar entre una i dues mensualitats.",
   contractes_check_dates: "La data de fi ha de ser posterior a la data d'inici.",
   persones_nif_hash_actiu_unique: 'Ja existeix una persona activa amb aquest NIF/CIF.',
   persones_estat_inquili_coherent: 'Estat de mora no vàlid per al tipus de persona indicat.',

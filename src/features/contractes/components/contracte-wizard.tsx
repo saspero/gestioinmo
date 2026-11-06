@@ -54,6 +54,8 @@ export function ContracteWizard({ unitatIdInicial, propietatIdInicial }: Contrac
   const [dataFi, setDataFi] = React.useState('');
   const [renda, setRenda] = React.useState('');
   const [fianca, setFianca] = React.useState('');
+  // Mentre l'usuari no pacti un altre import, la fiança segueix la renda (regla #4).
+  const [fiancaPactada, setFiancaPactada] = React.useState(false);
   const [indexActualitzacio, setIndexActualitzacio] = React.useState('IPC');
   const [percentatgePactat, setPercentatgePactat] = React.useState('');
   const [documentUrl, setDocumentUrl] = React.useState('');
@@ -69,13 +71,11 @@ export function ContracteWizard({ unitatIdInicial, propietatIdInicial }: Contrac
   const unitatEncaraVacant = !unitatSeleccionada || unitatSeleccionada.estat === 'vacant';
 
   const rendaNum = Number(renda) || 0;
-  const fiancaFora =
-    tipusUs === 'habitatge' && fianca !== '' && (Number(fianca) < rendaNum || Number(fianca) > rendaNum * 2);
 
   function canAdvanceFrom(current: Step): boolean {
     if (current === 1) return Boolean(unitatId);
     if (current === 2) return inquilinsSeleccionats.length > 0;
-    if (current === 3) return Boolean(dataInici) && rendaNum > 0 && fianca !== '' && !fiancaFora;
+    if (current === 3) return Boolean(dataInici) && rendaNum > 0 && fianca !== '';
     return true;
   }
 
@@ -240,7 +240,10 @@ export function ContracteWizard({ unitatIdInicial, propietatIdInicial }: Contrac
               min="0"
               step="0.01"
               value={renda}
-              onChange={(event) => setRenda(event.target.value)}
+              onChange={(event) => {
+                setRenda(event.target.value);
+                if (!fiancaPactada) setFianca(event.target.value);
+              }}
               required
             />
           </FormField>
@@ -248,20 +251,18 @@ export function ContracteWizard({ unitatIdInicial, propietatIdInicial }: Contrac
           <FormField
             label="Fiança (€)"
             required
-            error={
-              fieldErrors.fianca ??
-              (fiancaFora
-                ? `Per a un contracte d'habitatge, la fiança ha d'estar entre una i dues mensualitats (entre ${rendaNum}€ i ${rendaNum * 2}€).`
-                : undefined)
-            }
-            description={tipusUs === 'habitatge' && rendaNum > 0 ? `Rang vàlid: ${rendaNum}€ – ${rendaNum * 2}€` : undefined}
+            error={fieldErrors.fianca}
+            description="Per defecte, una mensualitat. Es pot pactar un altre import."
           >
             <Input
               type="number"
               min="0"
               step="0.01"
               value={fianca}
-              onChange={(event) => setFianca(event.target.value)}
+              onChange={(event) => {
+                setFianca(event.target.value);
+                setFiancaPactada(true);
+              }}
               required
             />
           </FormField>

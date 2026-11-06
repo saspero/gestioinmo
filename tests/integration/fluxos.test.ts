@@ -175,6 +175,11 @@ describe.skipIf(!adminUrl)('fluxos de negoci amb PostgreSQL real', () => {
       const canviat = await amb((c) => actualitzarContracte(c, id, { renda: 790 }));
       expect(Number(canviat?.renda)).toBe(790);
 
+      // Regla #4: la fiança no segueix la renda, així que una pujada d'IPC no la toca.
+      const pujat = await amb((c) => actualitzarContracte(c, id, { renda: 2000 }));
+      expect(Number(pujat?.renda)).toBe(2000);
+      expect(Number(pujat?.fianca)).toBe(Number(canviat?.fianca));
+
       const resolt = await amb((c) =>
         resoldreContracte(c, id, { motiuResolucio: 'Mutu acord', dataResolucio: '2026-06-30' })
       );

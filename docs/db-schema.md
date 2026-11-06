@@ -48,7 +48,7 @@ Implementat a `src/lib/db/tenants.ts` i invocat amb `npm run tenant:create`. El
 `pgcrypto` i `pg_trgm`: les extensions són úniques per base de dades i, creades des d'un
 tenant, quedarien dins el seu schema i fora de l'abast de la resta. Aquesta migració és
 global i s'ha d'aplicar abans de provisionar. Darrere de `009_indexes.sql` també
-s'executa `011_tenant_despeses.sql`.
+s'executen `011_tenant_despeses.sql` i `013_contractes_fianca_lliure.sql`.
 
 Seqüència:
 
@@ -266,7 +266,7 @@ Un *constraint trigger* diferit (`trg_check_percentatge_titularitat`) valida en 
 | data_inici | DATE NOT NULL | |
 | data_fi | DATE | `> data_inici` si informada |
 | renda | NUMERIC(10,2) | `> 0` |
-| fianca | NUMERIC(10,2) | `>= 0`; entre 1 i 2 mensualitats només si `tipus_us = 'habitatge'` |
+| fianca | NUMERIC(10,2) | `>= 0`; import pactat lliurement, per defecte una mensualitat (regla #4, ho resol l'aplicació) |
 | index_actualitzacio | TEXT NOT NULL DEFAULT 'IPC' | |
 | percentatge_pactat | NUMERIC(5,2) | Usat quan l'índex és un percentatge fix pactat |
 | estat | ENUM `estat_contracte` | `esborrany`, `actiu`, `finalitzat`, `resolt` |
@@ -408,7 +408,6 @@ actiu en el moment de la migració), no hi ha una única còpia global.
 | Constraint / mecanisme | Fitxer | Regla de negoci (requirements.md §5) |
 |---|---|---|
 | `contractes_unitat_actiu_idx` (índex únic parcial `WHERE estat='actiu'`) | 005 | #2 — una unitat només pot tenir un contracte actiu; un inquilí pot tenir-ne diversos (un per unitat) |
-| `contractes_check_fianca_habitatge` | 005 | #4 — fiança 1–2 mensualitats només per a `tipus_us='habitatge'`; altres usos sense topall fix |
 | `trg_check_percentatge_titularitat` | 004 | Regla 3.3 — el % de titularitat d'una propietat ha de sumar 100 |
 | `trg_sync_estat_inquili_mora` + `marcar_pagaments_vencuts()` | 006 | #5 — pagament vençut > 30 dies activa la mora de l'inquilí |
 | `trg_prevent_reobrir_incidencia` | 007 | #6 — una incidència només es tanca quan el gestor la marca resolta; no es reobre |

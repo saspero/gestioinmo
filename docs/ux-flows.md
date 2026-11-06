@@ -200,9 +200,9 @@ de contacte — vegeu §3.9.
 2. **Pas 2 — Inquilins**: afegir un o més inquilins (cercador + "Crear inquilí nou"
    inline si no existeix).
 3. **Pas 3 — Condicions**: tipus d'ús (habitatge / local / parking / industrial /
-   altres), data d'inici, durada, renda, fiança (amb validació en viu: si l'ús és
-   "habitatge", el camp fiança mostra el rang vàlid 1–2 mensualitats i avisa si es surt
-   d'aquest rang; per a altres usos, el camp és lliure sense avís), índex d'actualització.
+   altres), data d'inici, durada, renda, fiança (es proposa una mensualitat i segueix
+   la renda fins que l'usuari hi escriu un altre import pactat, sense cap límit), índex
+   d'actualització.
 4. **Pas 4 — Confirmació**: resum editable de tot l'anterior; "Crear com a esborrany" o
    "Crear i activar" (aquesta segona opció desactivada, amb missatge, si la unitat ha
    deixat de ser vàlida entre passos per una acció concurrent d'un altre usuari).
@@ -219,7 +219,6 @@ cap rebut per a aquest contracte.").
 | Restricció (`docs/requirements.md` §5) | Missatge |
 |---|---|
 | La unitat ja té un contracte actiu (regla #2) | "Aquesta unitat ja té un contracte actiu. Finalitza'l o resol-lo abans de crear-ne un de nou." (bloquejat al pas 1, la unitat ni apareix com a seleccionable) |
-| Fiança fora de rang per a habitatge (regla #4) | "Per a un contracte d'habitatge, la fiança ha d'estar entre 1 i 2 mensualitats (entre {renda}€ i {renda×2}€)." |
 | Data de fi anterior o igual a la d'inici | "La data de finalització ha de ser posterior a la data d'inici." |
 | Intent de reactivar un contracte resolt | Acció "Activar" no disponible (botó no renderitzat) per a contractes en estat `resolt`/`finalitzat`; cal crear-ne un de nou |
 

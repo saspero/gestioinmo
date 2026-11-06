@@ -22,6 +22,7 @@ const MIGRACIONS_TENANT = [
   '008_auditoria.sql',
   '009_indexes.sql',
   '011_tenant_despeses.sql',
+  '013_contractes_fianca_lliure.sql',
 ] as const;
 
 export interface TenantProvisionat {
