@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loginSchema } from '@/lib/validations/auth';
+import { canviContrasenyaSchema, loginSchema } from '@/lib/validations/auth';
 import { dateStringSchema, zodFieldErrors } from '@/lib/validations/common';
 import { actualitzarTenantSchema, crearUsuariSchema } from '@/lib/validations/configuracio';
 import { crearContracteSchema } from '@/lib/validations/contractes';
@@ -33,6 +33,31 @@ describe('auth', () => {
   it('exigeix email vàlid i contrasenya', () => {
     expect(loginSchema.safeParse({ email: 'no', password: 'x' }).success).toBe(false);
     expect(loginSchema.safeParse({ email: 'a@b.cat', password: '' }).success).toBe(false);
+  });
+});
+
+describe('canvi de contrasenya', () => {
+  const canvi = (dades: Record<string, string>) =>
+    canviContrasenyaSchema.safeParse({ actual: 'antiga-1234', nova: 'nova-123456', confirmacio: 'nova-123456', ...dades });
+  const errors = (dades: Record<string, string>) => {
+    const result = canvi(dades);
+    return result.success ? {} : zodFieldErrors(result.error);
+  };
+
+  it('accepta una contrasenya nova vàlida i confirmada', () => {
+    expect(canvi({}).success).toBe(true);
+  });
+
+  it('exigeix un mínim de 10 caràcters i com a màxim 72 bytes', () => {
+    expect(errors({ nova: 'curta', confirmacio: 'curta' }).nova).toContain('10');
+    const llarga = 'à'.repeat(37);
+    expect(errors({ nova: llarga, confirmacio: llarga }).nova).toBeDefined();
+  });
+
+  it('exigeix que la confirmació coincideixi i que sigui diferent de l’actual', () => {
+    expect(errors({ confirmacio: 'una-altra-cosa' }).confirmacio).toBeDefined();
+    expect(errors({ nova: 'antiga-1234', confirmacio: 'antiga-1234' }).nova).toBeDefined();
+    expect(errors({ actual: '' }).actual).toBeDefined();
   });
 });
 

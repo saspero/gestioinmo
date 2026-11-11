@@ -14,6 +14,7 @@ export interface AppShellProps {
     roleLabel: string;
   };
   onLogout: () => void;
+  onAccount?: () => void;
   children: React.ReactNode;
   className?: string;
 }
@@ -25,7 +26,7 @@ export interface AppShellProps {
  * `layout.tsx` real (`docs/architecture.md` §2/§3), fora de l'scope d'aquest
  * agent.
  */
-function AppShell({ tenantName, navItems, activeHref, user, onLogout, children, className }: AppShellProps) {
+function AppShell({ tenantName, navItems, activeHref, user, onLogout, onAccount, children, className }: AppShellProps) {
   return (
     <div className={cn('flex min-h-screen flex-col sm:flex-row', className)}>
       <aside className="flex shrink-0 flex-col gap-4 border-b border-border p-4 sm:w-64 sm:border-b-0 sm:border-r">
@@ -34,7 +35,7 @@ function AppShell({ tenantName, navItems, activeHref, user, onLogout, children, 
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-end gap-3 border-b border-border p-4">
-          <UserMenu name={user.name} roleLabel={user.roleLabel} onLogout={onLogout} />
+          <UserMenu name={user.name} roleLabel={user.roleLabel} onLogout={onLogout} onAccount={onAccount} />
         </header>
         <main className="flex-1 p-6">{children}</main>
       </div>

@@ -5,7 +5,15 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { PoolClient } from 'pg';
-import { login, createSession, isSessionActive, revokeAllSessions, revokeSession } from '@/lib/auth/session';
+import { hashPassword } from '@/lib/auth/password';
+import {
+  canviarContrasenya,
+  createSession,
+  isSessionActive,
+  login,
+  revokeAllSessions,
+  revokeSession,
+} from '@/lib/auth/session';
 import { withTenantContext } from '@/lib/auth/tenant-context';
 import { verifyToken } from '@/lib/auth/jwt';
 import { getDomainPool } from '@/lib/db/pool';
@@ -29,6 +37,7 @@ import {
   crearUsuari,
   llistarUsuaris,
   obtenirTenantConfig,
+  restablirContrasenyaUsuari,
 } from '@/lib/db/usuaris';
 import { actualitzarPropietatSchema, crearPropietatSchema } from '@/lib/validations/propietats';
 import { crearBdTest } from '../helpers/test-db';
@@ -180,6 +189,22 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
       await revokeAllSessions(sessioB.sub);
       expect(await isSessionActive(payload!.jti)).toBe(false);
     });
+
+    it('canvia la contrasenya si l’actual és correcta i només conserva la sessió que la canvia', async () => {
+      await crearUsuari(tenantA, { email: 'canvi@test.cat', nom: 'Canvi', rol: 'gestor' }, await hashDe('a@test.cat'));
+      const id = await idUsuari('canvi@test.cat');
+      const actual = await login('canvi@test.cat', PASSWORD);
+      const altra = await login('canvi@test.cat', PASSWORD);
+      if (!actual.ok || !altra.ok) throw new Error('El login de preparació ha fallat.');
+
+      expect(await canviarContrasenya(id, 'incorrecta', 'nova-contrasenya', actual.payload.jti)).toBe('contrasenya_incorrecta');
+      expect(await canviarContrasenya(id, PASSWORD, 'nova-contrasenya', actual.payload.jti)).toBe('ok');
+
+      expect(await isSessionActive(actual.payload.jti)).toBe(true);
+      expect(await isSessionActive(altra.payload.jti)).toBe(false);
+      expect(await login('canvi@test.cat', PASSWORD)).toEqual({ ok: false, reason: 'invalid_credentials' });
+      expect((await login('canvi@test.cat', 'nova-contrasenya')).ok).toBe(true);
+    });
   });
 
   describe('configuració', () => {
@@ -201,6 +226,18 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
     it("no permet canviar l'estat d'un usuari d'un altre tenant", async () => {
       expect(await canviarEstatUsuari(tenantB, sessioA.sub, false)).toBe(false);
       expect((await llistarUsuaris(tenantB)).every((usuari) => usuari.id !== sessioA.sub)).toBe(true);
+    });
+  });
+
+  describe('restabliment de contrasenya', () => {
+    it('posa la contrasenya nova i desbloqueja el compte, només dins el mateix tenant', async () => {
+      await crearUsuari(tenantA, { email: 'reset@test.cat', nom: 'Reset', rol: 'gestor' }, await hashPassword('una-altra-123'));
+      const id = await idUsuari('reset@test.cat');
+      for (let i = 0; i < 5; i += 1) await login('reset@test.cat', 'incorrecta');
+
+      expect(await restablirContrasenyaUsuari(tenantB, id, await hashDe('a@test.cat'))).toBe(false);
+      expect(await restablirContrasenyaUsuari(tenantA, id, await hashDe('a@test.cat'))).toBe(true);
+      expect((await login('reset@test.cat', PASSWORD)).ok).toBe(true);
     });
   });
 

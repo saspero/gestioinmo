@@ -5,7 +5,7 @@
 // Server Component `layout.tsx`.
 
 import { useTransition } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart3,
   Building2,
@@ -50,6 +50,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ tenantName, userName, rol, children }: DashboardShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [, startTransition] = useTransition();
 
   const navItems = NAVEGACIO.filter((item) => can(rol, item.modul, 'lectura'));
@@ -62,6 +63,7 @@ export function DashboardShell({ tenantName, userName, rol, children }: Dashboar
       activeHref={activeHref}
       user={{ name: userName, roleLabel: ETIQUETES_ROL[rol] }}
       onLogout={() => startTransition(() => logoutAction())}
+      onAccount={() => router.push('/compte')}
     >
       {children}
     </AppShell>

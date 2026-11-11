@@ -176,6 +176,64 @@ export async function revokeAllSessions(tenantUserId: string): Promise<void> {
   );
 }
 
+export type CanviContrasenyaResult = 'ok' | 'contrasenya_incorrecta' | 'compte_bloquejat' | 'usuari_no_trobat';
+
+/**
+ * Canvi de contrasenya de l'usuari autenticat. Exigeix la contrasenya actual: una sessió
+ * oberta en un ordinador aliè no ha de bastar per prendre el compte. Els errors compten
+ * com a intents fallits del login, perquè no serveixi per endevinar-la a força d'intents.
+ * Revoca la resta de sessions de l'usuari i conserva la que fa el canvi.
+ */
+export async function canviarContrasenya(
+  tenantUserId: string,
+  actual: string,
+  nova: string,
+  jtiActual: string
+): Promise<CanviContrasenyaResult> {
+  const pool = getAuthPool();
+  const { rows } = await pool.query<Pick<TenantUserRow, 'password_hash' | 'intents_fallits' | 'bloquejat_fins'>>(
+    `SELECT password_hash, intents_fallits, bloquejat_fins
+       FROM public.tenant_users
+      WHERE id = $1 AND actiu AND deleted_at IS NULL`,
+    [tenantUserId]
+  );
+
+  const user = rows[0];
+  if (!user) return 'usuari_no_trobat';
+  if (user.bloquejat_fins && user.bloquejat_fins.getTime() > Date.now()) return 'compte_bloquejat';
+
+  if (!(await verifyPassword(actual, user.password_hash))) {
+    await registrarIntentFallit(pool, tenantUserId, user.intents_fallits);
+    return 'contrasenya_incorrecta';
+  }
+
+  const nouHash = await hashPassword(nova);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `UPDATE public.tenant_users
+          SET password_hash = $2, intents_fallits = 0, bloquejat_fins = NULL
+        WHERE id = $1`,
+      [tenantUserId, nouHash]
+    );
+    await client.query(
+      `UPDATE public.tenant_user_sessions
+          SET revoked_at = now()
+        WHERE tenant_user_id = $1 AND token_jti <> $2 AND revoked_at IS NULL`,
+      [tenantUserId, jtiActual]
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  return 'ok';
+}
+
 /**
  * Consulta si una sessió segueix activa a `tenant_user_sessions` (ni revocada ni
  * expirada). El middleware d'Edge Runtime confia en l'`exp` del JWT per a la majoria de

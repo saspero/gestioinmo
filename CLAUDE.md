@@ -205,10 +205,10 @@ Si estàs llegint aquest fitxer com a agent de Claude Code:
 | Requirements | ✅ Completat |
 | Arquitectura | ✅ Completat |
 | BDD / Migracions | ✅ Completat (`001`-`013` aplicades a Supabase) |
-| Auth | ✅ Login, logout, sessions, RBAC i alta de tenants. Falta: renovació de JWT, canvi i recuperació de contrasenya |
+| Auth | ✅ Login, logout, sessions, RBAC, alta de tenants, canvi de contrasenya (`/compte`) i restabliment per l'administrador. Falta: renovació de JWT i recuperació per correu |
 | Mòduls funcionals | 🟡 Mòduls 1-8 fets. Falta: documents adjunts, persona jurídica i liquidacions de propietaris |
 | Tests | 🟡 `src/lib` cobert (unitaris + integració amb PostgreSQL real). Falten components i route handlers |
-| Deploy | ⏳ Pendent de variables d'entorn a Vercel i de crear l'administrador |
+| Deploy | ✅ Producció a Vercel, cada merge a `main` desplega |
 | Portal del llogater | ⏳ Pendent (última fase) |
 
 ### Alta d'una agència
