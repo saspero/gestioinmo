@@ -29,6 +29,7 @@ export async function crearBdTest(adminUrl: string): Promise<{ url: string; elim
   const rls = (await sql('010_rls.sql')).replace(/DO \$\$ BEGIN\s+CREATE EXTENSION IF NOT EXISTS pgaudit;[\s\S]*?END \$\$;/, '');
   await client.query(rls);
   await client.query(await sql('012_extensions_schema.sql'));
+  await client.query(await sql('014_canvi_contrasenya_obligatori.sql'));
   await client.end();
 
   return {

@@ -11,7 +11,9 @@ export const provisionarTenantSchema = z.object({
     nom: z.string().trim().min(1),
     cognoms: z.string().trim().min(1).optional(),
     password: z.string().min(12, 'La contrasenya ha de tenir almenys 12 caràcters.'),
+    /** Contrasenya generada: l'administrador n'haurà de triar una de pròpia en entrar. */
+    canviContrasenya: z.boolean().default(false),
   }),
 });
 
-export type ProvisionarTenantInput = z.infer<typeof provisionarTenantSchema>;
+export type ProvisionarTenantInput = z.input<typeof provisionarTenantSchema>;

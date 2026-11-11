@@ -50,7 +50,8 @@ function ContrasenyaTemporal({ password, children }: { password: string; childre
       <p>{children}</p>
       <code className="mt-1 block select-all font-mono">{password}</code>
       <p className="mt-1 text-xs text-muted-foreground">
-        Copia-la ara: no es tornarà a mostrar. Fes-la arribar a l&apos;usuari per un canal segur.
+        Copia-la ara: no es tornarà a mostrar. Fes-la arribar a l&apos;usuari per un canal segur; l&apos;haurà
+        de canviar el primer cop que entri.
       </p>
     </div>
   );

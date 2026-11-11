@@ -15,6 +15,12 @@ describe('jwt', () => {
     expect(payload).toMatchObject(USUARI);
   });
 
+  it("només porta l'indicador de canvi de contrasenya quan cal", async () => {
+    expect((await verifyToken(await signToken(USUARI, 60)))!.canvi_contrasenya).toBeUndefined();
+    const amb = await verifyToken(await signToken({ ...USUARI, canvi_contrasenya: true }, 60));
+    expect(amb!.canvi_contrasenya).toBe(true);
+  });
+
   it("calcula l'expiració a partir dels minuts del tenant", async () => {
     const payload = await verifyToken(await signToken(USUARI, 30));
     expect(payload!.exp - payload!.iat).toBe(30 * 60);

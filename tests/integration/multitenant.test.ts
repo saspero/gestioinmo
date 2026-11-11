@@ -11,6 +11,7 @@ import {
   createSession,
   isSessionActive,
   login,
+  reemetreSessio,
   revokeAllSessions,
   revokeSession,
 } from '@/lib/auth/session';
@@ -196,6 +197,8 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
       const actual = await login('canvi@test.cat', PASSWORD);
       const altra = await login('canvi@test.cat', PASSWORD);
       if (!actual.ok || !altra.ok) throw new Error('El login de preparació ha fallat.');
+      // Creat per un administrador: la contrasenya és temporal.
+      expect(actual.payload.canvi_contrasenya).toBe(true);
 
       expect(await canviarContrasenya(id, 'incorrecta', 'nova-contrasenya', actual.payload.jti)).toBe('contrasenya_incorrecta');
       expect(await canviarContrasenya(id, PASSWORD, 'nova-contrasenya', actual.payload.jti)).toBe('ok');
@@ -203,7 +206,20 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
       expect(await isSessionActive(actual.payload.jti)).toBe(true);
       expect(await isSessionActive(altra.payload.jti)).toBe(false);
       expect(await login('canvi@test.cat', PASSWORD)).toEqual({ ok: false, reason: 'invalid_credentials' });
-      expect((await login('canvi@test.cat', 'nova-contrasenya')).ok).toBe(true);
+      const despres = await login('canvi@test.cat', 'nova-contrasenya');
+      if (!despres.ok) throw new Error('El login amb la contrasenya nova ha fallat.');
+      expect(despres.payload.canvi_contrasenya).toBeUndefined();
+
+      // La sessió que portava l'indicador se substitueix per una de neta.
+      const reemesa = await reemetreSessio(actual.payload, {});
+      expect((await verifyToken(reemesa.token))?.canvi_contrasenya).toBeUndefined();
+      expect(await isSessionActive(actual.payload.jti)).toBe(false);
+    });
+
+    it("l'administrador de l'alta només ha de canviar la contrasenya si era generada", async () => {
+      const result = await login('a@test.cat', PASSWORD);
+      if (!result.ok) throw new Error('El login de preparació ha fallat.');
+      expect(result.payload.canvi_contrasenya).toBeUndefined();
     });
   });
 
@@ -237,7 +253,7 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
 
       expect(await restablirContrasenyaUsuari(tenantB, id, await hashDe('a@test.cat'))).toBe(false);
       expect(await restablirContrasenyaUsuari(tenantA, id, await hashDe('a@test.cat'))).toBe(true);
-      expect((await login('reset@test.cat', PASSWORD)).ok).toBe(true);
+      expect(await login('reset@test.cat', PASSWORD)).toMatchObject({ ok: true, payload: { canvi_contrasenya: true } });
     });
   });
 

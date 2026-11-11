@@ -67,15 +67,16 @@ export async function crearUsuari(tenantId: string, input: CrearUsuari, password
   }
 
   await pool.query(
-    `INSERT INTO public.tenant_users (tenant_id, email, password_hash, nom, cognoms, rol)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+    `INSERT INTO public.tenant_users (tenant_id, email, password_hash, nom, cognoms, rol, canvi_contrasenya_obligatori)
+     VALUES ($1, $2, $3, $4, $5, $6, true)`,
     [tenantId, input.email, passwordHash, input.nom, input.cognoms ?? null, input.rol]
   );
 }
 
 /**
- * Restabliment per part d'un administrador: posa una contrasenya nova i desbloqueja el
- * compte. Revocar les sessions de l'usuari és responsabilitat de qui crida.
+ * Restabliment per part d'un administrador: posa una contrasenya temporal, desbloqueja el
+ * compte i obliga l'usuari a canviar-la en entrar. Revocar les sessions de l'usuari és
+ * responsabilitat de qui crida.
  */
 export async function restablirContrasenyaUsuari(
   tenantId: string,
@@ -84,7 +85,7 @@ export async function restablirContrasenyaUsuari(
 ): Promise<boolean> {
   const { rowCount } = await getDomainPool().query(
     `UPDATE public.tenant_users
-        SET password_hash = $3, intents_fallits = 0, bloquejat_fins = NULL
+        SET password_hash = $3, intents_fallits = 0, bloquejat_fins = NULL, canvi_contrasenya_obligatori = true
       WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
     [usuariId, tenantId, passwordHash]
   );

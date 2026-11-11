@@ -86,9 +86,9 @@ export async function provisionarTenant(
     }
 
     await client.query(
-      `INSERT INTO public.tenant_users (tenant_id, email, password_hash, nom, cognoms, rol)
-       VALUES ($1, $2, $3, $4, $5, 'admin')`,
-      [tenantId, admin.email, passwordHash, admin.nom, admin.cognoms ?? null]
+      `INSERT INTO public.tenant_users (tenant_id, email, password_hash, nom, cognoms, rol, canvi_contrasenya_obligatori)
+       VALUES ($1, $2, $3, $4, $5, 'admin', $6)`,
+      [tenantId, admin.email, passwordHash, admin.nom, admin.cognoms ?? null, admin.canviContrasenya]
     );
 
     logger.info('Tenant provisionat', { tenantId, tenantNou });

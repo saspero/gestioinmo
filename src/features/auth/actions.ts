@@ -6,7 +6,15 @@ import { redirect } from 'next/navigation';
 
 import { getDashboardSession } from '@/app/(dashboard)/_lib/session';
 import { verifyToken } from '@/lib/auth/jwt';
-import { AUTH_COOKIE_NAME, canviarContrasenya, isSessionActive, login, revokeSession } from '@/lib/auth/session';
+import {
+  AUTH_COOKIE_NAME,
+  canviarContrasenya,
+  isSessionActive,
+  login,
+  reemetreSessio,
+  revokeSession,
+  type LoginMeta,
+} from '@/lib/auth/session';
 import { logger } from '@/lib/logger';
 import { canviContrasenyaSchema, loginSchema } from '@/lib/validations/auth';
 import { zodFieldErrors } from '@/lib/validations/common';
@@ -24,6 +32,26 @@ const MISSATGES = {
   account_disabled: "Aquest compte està desactivat. Contacta amb l'administrador de la teva agència.",
 } as const;
 
+async function metaPeticio(): Promise<LoginMeta> {
+  const headerStore = await headers();
+  const ip = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim();
+  return {
+    ipAddress: ip && isIP(ip) ? ip : undefined,
+    userAgent: headerStore.get('user-agent') ?? undefined,
+  };
+}
+
+async function desarCookieSessio(token: string, expires: Date): Promise<void> {
+  const store = await cookies();
+  store.set(AUTH_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    expires,
+  });
+}
+
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get('email') ?? '');
   const parsed = loginSchema.safeParse({ email, password: formData.get('password') });
@@ -32,27 +60,14 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     return { email, fields: { email: errors.email?.[0], password: errors.password?.[0] } };
   }
 
-  const headerStore = await headers();
-  const ip = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim();
-
   try {
-    const result = await login(parsed.data.email, parsed.data.password, {
-      ipAddress: ip && isIP(ip) ? ip : undefined,
-      userAgent: headerStore.get('user-agent') ?? undefined,
-    });
+    const result = await login(parsed.data.email, parsed.data.password, await metaPeticio());
 
     if (!result.ok) {
       return { email, error: MISSATGES[result.reason] };
     }
 
-    const store = await cookies();
-    store.set(AUTH_COOKIE_NAME, result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      expires: new Date(result.payload.exp * 1000),
-    });
+    await desarCookieSessio(result.token, new Date(result.payload.exp * 1000));
   } catch (error) {
     logger.error('Error inesperat al login', {
       error: error instanceof Error ? error.message : String(error),
@@ -88,6 +103,11 @@ export async function canviarContrasenyaAction(
   try {
     const result = await canviarContrasenya(payload.sub, parsed.data.actual, parsed.data.nova, payload.jti);
     if (result !== 'ok') return { error: MISSATGES_CANVI[result] };
+
+    if (payload.canvi_contrasenya) {
+      const sessio = await reemetreSessio(payload, await metaPeticio());
+      await desarCookieSessio(sessio.token, sessio.expiresAt);
+    }
   } catch (error) {
     logger.error('Error en canviar la contrasenya', {
       error: error instanceof Error ? error.message : String(error),
@@ -95,6 +115,8 @@ export async function canviarContrasenyaAction(
     return { error: "No s'ha pogut canviar la contrasenya. Torna-ho a provar." };
   }
 
+  // Era la contrasenya temporal: ja pot fer servir l'aplicació.
+  if (payload.canvi_contrasenya) redirect('/');
   return { ok: true };
 }
 
