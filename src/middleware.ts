@@ -19,6 +19,7 @@ import { verifyToken } from './lib/auth/jwt';
 const AUTH_COOKIE_NAME = 'gestinmo_session';
 
 const LOGIN_PATH = '/login';
+const COMPTE_PATH = '/compte';
 
 /**
  * Headers interns via els quals el middleware propaga la identitat ja verificada als
@@ -32,6 +33,18 @@ const USER_ID_HEADER = 'x-user-id';
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const payload = token ? await verifyToken(token) : null;
+
+  if (payload?.canvi_contrasenya && request.nextUrl.pathname !== COMPTE_PATH) {
+    // Contrasenya temporal: fins que no en triï una de pròpia, només pot ser a "El meu
+    // compte". Les Server Actions d'aquesta pàgina (canvi i logout) s'hi publiquen.
+    if (request.nextUrl.pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'Cal canviar la contrasenya abans de continuar.' } },
+        { status: 403 }
+      );
+    }
+    return NextResponse.redirect(new URL(COMPTE_PATH, request.url));
+  }
 
   if (payload) {
     const headers = new Headers(request.headers);

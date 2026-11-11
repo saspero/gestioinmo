@@ -9,6 +9,8 @@ export interface JwtPayload {
   tenant_id: string;
   rol: RolUsuari;
   jti: string;
+  /** Present només quan l'usuari ha de canviar la contrasenya temporal abans de continuar. */
+  canvi_contrasenya?: true;
   iat: number;
   exp: number;
 }
@@ -18,6 +20,7 @@ const jwtPayloadSchema = z.object({
   tenant_id: z.string().uuid(),
   rol: z.enum(['admin', 'gestor', 'comptable']),
   jti: z.string().uuid(),
+  canvi_contrasenya: z.literal(true).optional(),
   iat: z.number(),
   exp: z.number(),
 });
@@ -40,13 +43,14 @@ function getJwtSecret(): Uint8Array {
  * corresponent (docs/db-schema.md §3.1), mai d'un valor fix global.
  */
 export async function signToken(
-  payload: Pick<JwtPayload, 'sub' | 'tenant_id' | 'rol' | 'jti'>,
+  payload: Pick<JwtPayload, 'sub' | 'tenant_id' | 'rol' | 'jti' | 'canvi_contrasenya'>,
   expiracioMinuts: number
 ): Promise<string> {
   return new SignJWT({
     tenant_id: payload.tenant_id,
     rol: payload.rol,
     jti: payload.jti,
+    ...(payload.canvi_contrasenya ? { canvi_contrasenya: true } : {}),
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(payload.sub)

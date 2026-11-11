@@ -22,6 +22,7 @@ interface TenantUserRow {
   actiu: boolean;
   intents_fallits: number;
   bloquejat_fins: Date | null;
+  canvi_contrasenya_obligatori: boolean;
   jwt_expiracio_minuts: number;
 }
 
@@ -61,7 +62,7 @@ export async function login(email: string, plainPassword: string, meta: LoginMet
 
   const { rows } = await pool.query<TenantUserRow>(
     `SELECT tu.id, tu.tenant_id, tu.password_hash, tu.rol, tu.actiu,
-            tu.intents_fallits, tu.bloquejat_fins, t.jwt_expiracio_minuts
+            tu.intents_fallits, tu.bloquejat_fins, tu.canvi_contrasenya_obligatori, t.jwt_expiracio_minuts
        FROM public.tenant_users tu
        JOIN public.tenants t ON t.id = tu.tenant_id
       WHERE tu.email = $1 AND tu.deleted_at IS NULL
@@ -105,7 +106,7 @@ export async function login(email: string, plainPassword: string, meta: LoginMet
   );
 
   const { token } = await createSession(
-    { id: user.id, tenantId: user.tenant_id, rol: user.rol },
+    { id: user.id, tenantId: user.tenant_id, rol: user.rol, canviContrasenya: user.canvi_contrasenya_obligatori },
     meta,
     user.jwt_expiracio_minuts
   );
@@ -135,6 +136,7 @@ interface CreateSessionUser {
   id: string;
   tenantId: string;
   rol: RolUsuari;
+  canviContrasenya?: boolean;
 }
 
 /** Insereix una nova sessió a `tenant_user_sessions` i retorna el JWT signat. */
@@ -153,7 +155,13 @@ export async function createSession(
   );
 
   const token = await signToken(
-    { sub: user.id, tenant_id: user.tenantId, rol: user.rol, jti },
+    {
+      sub: user.id,
+      tenant_id: user.tenantId,
+      rol: user.rol,
+      jti,
+      ...(user.canviContrasenya ? { canvi_contrasenya: true as const } : {}),
+    },
     jwtExpiracioMinuts
   );
 
@@ -213,7 +221,7 @@ export async function canviarContrasenya(
     await client.query('BEGIN');
     await client.query(
       `UPDATE public.tenant_users
-          SET password_hash = $2, intents_fallits = 0, bloquejat_fins = NULL
+          SET password_hash = $2, intents_fallits = 0, bloquejat_fins = NULL, canvi_contrasenya_obligatori = false
         WHERE id = $1`,
       [tenantUserId, nouHash]
     );
@@ -232,6 +240,34 @@ export async function canviarContrasenya(
   }
 
   return 'ok';
+}
+
+/**
+ * Substitueix la sessió actual per una de nova amb l'estat vigent de l'usuari. Es fa servir
+ * després del canvi obligatori de contrasenya: el JWT antic porta `canvi_contrasenya` i
+ * el middleware el continuaria desviant a "El meu compte" fins que caduqués.
+ */
+export async function reemetreSessio(
+  payload: JwtPayload,
+  meta: LoginMeta
+): Promise<{ token: string; expiresAt: Date }> {
+  const { rows } = await getAuthPool().query<Pick<TenantUserRow, 'rol' | 'canvi_contrasenya_obligatori' | 'jwt_expiracio_minuts'>>(
+    `SELECT tu.rol, tu.canvi_contrasenya_obligatori, t.jwt_expiracio_minuts
+       FROM public.tenant_users tu
+       JOIN public.tenants t ON t.id = tu.tenant_id
+      WHERE tu.id = $1 AND tu.tenant_id = $2 AND tu.actiu AND tu.deleted_at IS NULL`,
+    [payload.sub, payload.tenant_id]
+  );
+  const user = rows[0];
+  if (!user) throw new Error("L'usuari de la sessió ja no existeix o està desactivat.");
+
+  const nova = await createSession(
+    { id: payload.sub, tenantId: payload.tenant_id, rol: user.rol, canviContrasenya: user.canvi_contrasenya_obligatori },
+    meta,
+    user.jwt_expiracio_minuts
+  );
+  await revokeSession(payload.jti);
+  return { token: nova.token, expiresAt: nova.expiresAt };
 }
 
 /**

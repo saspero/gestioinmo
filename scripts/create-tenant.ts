@@ -31,6 +31,7 @@ async function main(): Promise<void> {
       nom: values['admin-nom'] ?? '',
       cognoms: values['admin-cognoms'],
       password,
+      canviContrasenya: generada,
     },
   });
 

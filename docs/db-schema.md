@@ -48,7 +48,7 @@ Implementat a `src/lib/db/tenants.ts` i invocat amb `npm run tenant:create`. El
 `pgcrypto` i `pg_trgm`: les extensions són úniques per base de dades i, creades des d'un
 tenant, quedarien dins el seu schema i fora de l'abast de la resta. Aquesta migració és
 global i s'ha d'aplicar abans de provisionar. Darrere de `009_indexes.sql` també
-s'executen `011_tenant_despeses.sql` i `013_contractes_fianca_lliure.sql`.
+s'executen `011_tenant_despeses.sql` i `013_contractes_fianca_lliure.sql`. `014_canvi_contrasenya_obligatori.sql` és global, com la 012.
 
 Seqüència:
 
@@ -151,6 +151,7 @@ cada schema `tenant_{uuid}`. `TENANTS`, `TENANT_USERS` i `TENANT_USER_SESSIONS` 
 | actiu | BOOLEAN NOT NULL DEFAULT true | Usuari desactivat no pot iniciar sessió |
 | intents_fallits | INTEGER NOT NULL DEFAULT 0 | Bloqueig per intents fallits |
 | bloquejat_fins | TIMESTAMPTZ | |
+| canvi_contrasenya_obligatori | BOOLEAN | NOT NULL DEFAULT false. `true` mentre l'usuari tingui una contrasenya temporal (`014`, global) |
 | ultim_login | TIMESTAMPTZ | |
 | created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
