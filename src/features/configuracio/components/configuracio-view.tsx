@@ -74,7 +74,7 @@ function AgenciaForm({ tenant }: { tenant: TenantConfig }) {
       <FormField
         label="Expiració de la sessió (minuts)"
         required
-        description="S'aplica a les sessions que s'iniciïn a partir d'ara."
+        description="Temps sense activitat abans que calgui tornar a entrar. Mentre s'utilitza l'aplicació, la sessió es renova sola."
         error={state.fields?.jwtExpiracioMinuts}
       >
         <Input name="jwtExpiracioMinuts" type="number" min={5} max={1440} defaultValue={tenant.jwtExpiracioMinuts} />
