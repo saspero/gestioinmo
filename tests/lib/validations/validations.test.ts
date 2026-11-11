@@ -37,19 +37,21 @@ describe('auth', () => {
 });
 
 describe('contractes', () => {
-  it('accepta fiança d’1 a 2 mensualitats en habitatge', () => {
-    expect(crearContracteSchema.safeParse(contracte({ fianca: 1000 })).success).toBe(true);
-    expect(crearContracteSchema.safeParse(contracte({ fianca: 2000 })).success).toBe(true);
+  it('per defecte, la fiança és una mensualitat', () => {
+    expect(crearContracteSchema.parse(contracte({ fianca: undefined })).fianca).toBe(1000);
   });
 
-  it('rebutja fiança fora de rang en habitatge i marca el camp', () => {
-    const result = crearContracteSchema.safeParse(contracte({ fianca: 2001 }));
+  it('accepta qualsevol fiança pactada, sigui quin sigui l’ús', () => {
+    expect(crearContracteSchema.parse(contracte({ fianca: 0 })).fianca).toBe(0);
+    expect(crearContracteSchema.parse(contracte({ fianca: 500 })).fianca).toBe(500);
+    expect(crearContracteSchema.parse(contracte({ fianca: 3000 })).fianca).toBe(3000);
+    expect(crearContracteSchema.parse(contracte({ tipusUs: 'local', fianca: 9000 })).fianca).toBe(9000);
+  });
+
+  it('rebutja una fiança negativa i marca el camp', () => {
+    const result = crearContracteSchema.safeParse(contracte({ fianca: -1 }));
     expect(result.success).toBe(false);
-    if (!result.success) expect(zodFieldErrors(result.error).fianca).toContain('mensualitats');
-  });
-
-  it('no limita la fiança per a altres usos', () => {
-    expect(crearContracteSchema.safeParse(contracte({ tipusUs: 'local', fianca: 9000 })).success).toBe(true);
+    if (!result.success) expect(zodFieldErrors(result.error).fianca).toBeDefined();
   });
 
   it("exigeix data de fi posterior a la d'inici", () => {

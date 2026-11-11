@@ -11,24 +11,13 @@ export const crearContracteSchema = z
     dataInici: dateStringSchema,
     dataFi: dateStringSchema.optional(),
     renda: z.number().positive(),
-    fianca: z.number().nonnegative(),
+    fianca: z.number().nonnegative().optional(),
     indexActualitzacio: z.string().trim().min(1).default('IPC'),
     percentatgePactat: z.number().optional(),
     documentUrl: z.string().trim().url().optional(),
     inquilinsIds: z.array(uuidSchema).min(1, 'Cal indicar almenys un inquilí'),
   })
-  // docs/requirements.md, regla de negoci #4: fiança 1-2 mensualitats només per a
-  // habitatge; altres usos es pacten lliurement (docs/db-schema.md §5,
-  // `contractes_check_fianca_habitatge`) — es valida també aquí per donar un error 400
-  // amb el camp exacte en lloc d'esperar el 409 de la BD.
   .superRefine((data, ctx) => {
-    if (data.tipusUs === 'habitatge' && (data.fianca < data.renda || data.fianca > data.renda * 2)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['fianca'],
-        message: "Per a contractes d'habitatge, la fiança ha d'estar entre una i dues mensualitats.",
-      });
-    }
     if (data.dataFi && data.dataFi <= data.dataInici) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -36,7 +25,10 @@ export const crearContracteSchema = z
         message: "La data de fi ha de ser posterior a la data d'inici.",
       });
     }
-  });
+  })
+  // docs/requirements.md, regla de negoci #4: la fiança es pacta lliurement; si no
+  // s'indica, és una mensualitat de la renda inicial.
+  .transform((data) => ({ ...data, fianca: data.fianca ?? data.renda }));
 export type CrearContracte = z.infer<typeof crearContracteSchema>;
 
 export const actualitzarContracteSchema = z.object({

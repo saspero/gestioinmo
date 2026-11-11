@@ -204,11 +204,11 @@ Si estàs llegint aquest fitxer com a agent de Claude Code:
 | Definició d'agents | ✅ Completat |
 | Requirements | ✅ Completat |
 | Arquitectura | ✅ Completat |
-| BDD / Migracions | ✅ Completat (`012` pendent d'aplicar a Supabase) |
+| BDD / Migracions | ✅ Completat (`001`-`013` aplicades a Supabase) |
 | Auth | ✅ Login, logout, sessions, RBAC i alta de tenants. Falta: renovació de JWT, canvi i recuperació de contrasenya |
 | Mòduls funcionals | 🟡 Mòduls 1-8 fets. Falta: documents adjunts, persona jurídica i liquidacions de propietaris |
 | Tests | 🟡 `src/lib` cobert (unitaris + integració amb PostgreSQL real). Falten components i route handlers |
-| Deploy | ⏳ Pendent de variables d'entorn a Vercel i de la migració `012` |
+| Deploy | ⏳ Pendent de variables d'entorn a Vercel i de crear l'administrador |
 | Portal del llogater | ⏳ Pendent (última fase) |
 
 ### Alta d'una agència

@@ -109,11 +109,6 @@ CREATE UNIQUE INDEX contractes_unitat_actiu_idx
   ON contractes(unitat_id)
   WHERE estat = 'actiu' AND deleted_at IS NULL;
 
--- Fiança: entre 1 i 2 mensualitats (habitatge)
-ALTER TABLE contractes
-  ADD CONSTRAINT check_fianca
-  CHECK (fianca >= renda AND fianca <= renda * 2);
-
 -- Data fi > data inici
 ALTER TABLE contractes
   ADD CONSTRAINT check_dates
