@@ -73,6 +73,24 @@ export async function crearUsuari(tenantId: string, input: CrearUsuari, password
   );
 }
 
+/**
+ * Restabliment per part d'un administrador: posa una contrasenya nova i desbloqueja el
+ * compte. Revocar les sessions de l'usuari és responsabilitat de qui crida.
+ */
+export async function restablirContrasenyaUsuari(
+  tenantId: string,
+  usuariId: string,
+  passwordHash: string
+): Promise<boolean> {
+  const { rowCount } = await getDomainPool().query(
+    `UPDATE public.tenant_users
+        SET password_hash = $3, intents_fallits = 0, bloquejat_fins = NULL
+      WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
+    [usuariId, tenantId, passwordHash]
+  );
+  return (rowCount ?? 0) > 0;
+}
+
 export async function canviarEstatUsuari(tenantId: string, usuariId: string, actiu: boolean): Promise<boolean> {
   const { rowCount } = await getDomainPool().query(
     `UPDATE public.tenant_users

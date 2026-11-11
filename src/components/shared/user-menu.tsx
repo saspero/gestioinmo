@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { LogOut } from 'lucide-react';
+import { KeyRound, LogOut } from 'lucide-react';
 
 import { cn } from '@/components/lib/utils';
 import {
@@ -17,11 +17,13 @@ export interface UserMenuProps {
   name: string;
   roleLabel: string;
   onLogout: () => void;
+  /** Obre "El meu compte" (canvi de contrasenya). Sense aquesta prop, l'opció no apareix. */
+  onAccount?: () => void;
   className?: string;
 }
 
-/** Menú d'usuari (nom, rol, "Tancar sessió") accessible des de qualsevol pantalla del dashboard (`docs/ux-flows.md` §5). */
-function UserMenu({ name, roleLabel, onLogout, className }: UserMenuProps) {
+/** Menú d'usuari (nom, rol, "El meu compte", "Tancar sessió") accessible des de qualsevol pantalla del dashboard (`docs/ux-flows.md` §5). */
+function UserMenu({ name, roleLabel, onLogout, onAccount, className }: UserMenuProps) {
   const initial = name.trim().charAt(0).toUpperCase() || '?';
 
   return (
@@ -49,6 +51,12 @@ function UserMenu({ name, roleLabel, onLogout, className }: UserMenuProps) {
           <span className="block text-xs text-muted-foreground">{roleLabel}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {onAccount && (
+          <DropdownMenuItem onClick={onAccount}>
+            <KeyRound aria-hidden />
+            El meu compte
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={onLogout}>
           <LogOut aria-hidden />
           Tancar sessió

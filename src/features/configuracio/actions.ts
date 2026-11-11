@@ -8,7 +8,12 @@ import { hashPassword } from '@/lib/auth/password';
 import { can } from '@/lib/auth/rbac';
 import { isSessionActive, revokeAllSessions } from '@/lib/auth/session';
 import { BusinessRuleError } from '@/lib/db/business-error';
-import { actualitzarTenantConfig, canviarEstatUsuari, crearUsuari } from '@/lib/db/usuaris';
+import {
+  actualitzarTenantConfig,
+  canviarEstatUsuari,
+  crearUsuari,
+  restablirContrasenyaUsuari,
+} from '@/lib/db/usuaris';
 import { logger } from '@/lib/logger';
 import { zodFieldErrors } from '@/lib/validations/common';
 import { actualitzarTenantSchema, crearUsuariSchema } from '@/lib/validations/configuracio';
@@ -73,6 +78,29 @@ export async function crearUsuariAction(_prev: ConfigState, formData: FormData):
 
   revalidatePath('/configuracio');
   return { ok: true, passwordTemporal, emailCreat: parsed.data.email };
+}
+
+export async function restablirContrasenyaAction(usuariId: string): Promise<ConfigState> {
+  const payload = await sessioAdmin();
+  if (!payload) return SENSE_PERMIS;
+
+  // La pròpia es canvia des de "El meu compte", que demana la contrasenya actual.
+  if (usuariId === payload.sub) {
+    return { error: 'Canvia la teva contrasenya des de «El meu compte».' };
+  }
+
+  const passwordTemporal = randomBytes(12).toString('base64url');
+
+  try {
+    const trobat = await restablirContrasenyaUsuari(payload.tenant_id, usuariId, await hashPassword(passwordTemporal));
+    if (!trobat) return { error: 'Usuari no trobat.' };
+    await revokeAllSessions(usuariId);
+  } catch (error) {
+    registrarError('Error en restablir la contrasenya', error);
+    return ERROR_GENERIC;
+  }
+
+  return { ok: true, passwordTemporal };
 }
 
 export async function canviarEstatUsuariAction(usuariId: string, actiu: boolean): Promise<ConfigState> {

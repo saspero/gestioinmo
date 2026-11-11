@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 
-import { DataTable, FormField } from '@/components/shared';
+import { ConfirmDialog, DataTable, FormField } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared/data-table/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import {
   canviarEstatUsuariAction,
   crearUsuariAction,
   guardarTenantAction,
+  restablirContrasenyaAction,
   type ConfigState,
 } from '../actions';
 
@@ -40,6 +41,18 @@ function ErrorFormulari({ missatge }: { missatge?: string }) {
     <p role="alert" className="text-sm font-medium text-destructive">
       {missatge}
     </p>
+  );
+}
+
+function ContrasenyaTemporal({ password, children }: { password: string; children: React.ReactNode }) {
+  return (
+    <div role="status" className="rounded-md border border-border bg-muted p-3 text-sm text-foreground">
+      <p>{children}</p>
+      <code className="mt-1 block select-all font-mono">{password}</code>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Copia-la ara: no es tornarà a mostrar. Fes-la arribar a l&apos;usuari per un canal segur.
+      </p>
+    </div>
   );
 }
 
@@ -104,15 +117,9 @@ function NouUsuariForm() {
       </FormField>
       <ErrorFormulari missatge={state.error} />
       {state.passwordTemporal && (
-        <div role="status" className="rounded-md border border-border bg-muted p-3 text-sm text-foreground">
-          <p>
-            Usuari <strong>{state.emailCreat}</strong> creat. Contrasenya temporal:
-          </p>
-          <code className="mt-1 block select-all font-mono">{state.passwordTemporal}</code>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Copia-la ara: no es tornarà a mostrar. Fes-la arribar a l&apos;usuari per un canal segur.
-          </p>
-        </div>
+        <ContrasenyaTemporal password={state.passwordTemporal}>
+          Usuari <strong>{state.emailCreat}</strong> creat. Contrasenya temporal:
+        </ContrasenyaTemporal>
       )}
       <SubmitButton>Crear usuari</SubmitButton>
     </form>
@@ -121,6 +128,26 @@ function NouUsuariForm() {
 
 function UsuarisSection({ usuaris, usuariActualId }: { usuaris: UsuariIntern[]; usuariActualId: string }) {
   const [pendent, startTransition] = React.useTransition();
+  const [aRestablir, setARestablir] = React.useState<UsuariIntern | null>(null);
+  const [restablerta, setRestablerta] = React.useState<{ email: string; password: string } | null>(null);
+
+  function restablir() {
+    const usuari = aRestablir;
+    if (!usuari) return;
+    startTransition(async () => {
+      const result = await restablirContrasenyaAction(usuari.id);
+      setARestablir(null);
+      if (result.passwordTemporal) {
+        setRestablerta({ email: usuari.email, password: result.passwordTemporal });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: "No s'ha pogut restablir la contrasenya",
+          description: result.error,
+        });
+      }
+    });
+  }
 
   function canviarEstat(usuari: UsuariIntern) {
     startTransition(async () => {
@@ -144,16 +171,40 @@ function UsuarisSection({ usuaris, usuariActualId }: { usuaris: UsuariIntern[]; 
         row.id === usuariActualId ? (
           '—'
         ) : (
-          <Button variant="outline" size="sm" disabled={pendent} onClick={() => canviarEstat(row)}>
-            {row.actiu ? 'Desactivar' : 'Reactivar'}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" disabled={pendent} onClick={() => canviarEstat(row)}>
+              {row.actiu ? 'Desactivar' : 'Reactivar'}
+            </Button>
+            <Button variant="outline" size="sm" disabled={pendent} onClick={() => setARestablir(row)}>
+              Restablir contrasenya
+            </Button>
+          </div>
         ),
     },
   ];
 
   return (
     <div className="flex flex-col gap-6">
+      {restablerta && (
+        <ContrasenyaTemporal password={restablerta.password}>
+          Contrasenya de <strong>{restablerta.email}</strong> restablerta. Contrasenya temporal:
+        </ContrasenyaTemporal>
+      )}
       <DataTable columns={columns} data={usuaris} getRowId={(row) => row.id} />
+      <ConfirmDialog
+        open={aRestablir !== null}
+        onOpenChange={(open) => {
+          if (!open) setARestablir(null);
+        }}
+        title="Restablir contrasenya"
+        description={
+          aRestablir &&
+          `Es generarà una contrasenya temporal nova per a ${aRestablir.email}. La que té ara deixarà de funcionar i es tancaran les seves sessions.`
+        }
+        confirmLabel="Restablir"
+        loading={pendent}
+        onConfirm={restablir}
+      />
       <NouUsuariForm />
     </div>
   );

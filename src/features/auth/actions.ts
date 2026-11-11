@@ -4,10 +4,12 @@ import { isIP } from 'node:net';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { getDashboardSession } from '@/app/(dashboard)/_lib/session';
 import { verifyToken } from '@/lib/auth/jwt';
-import { AUTH_COOKIE_NAME, login, revokeSession } from '@/lib/auth/session';
+import { AUTH_COOKIE_NAME, canviarContrasenya, isSessionActive, login, revokeSession } from '@/lib/auth/session';
 import { logger } from '@/lib/logger';
-import { loginSchema } from '@/lib/validations/auth';
+import { canviContrasenyaSchema, loginSchema } from '@/lib/validations/auth';
+import { zodFieldErrors } from '@/lib/validations/common';
 import { rutaSegura } from './safe-redirect';
 
 export interface LoginState {
@@ -59,6 +61,41 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   }
 
   redirect(rutaSegura(formData.get('from')));
+}
+
+export interface CanviContrasenyaState {
+  ok?: boolean;
+  error?: string;
+  fields?: Record<string, string>;
+}
+
+const MISSATGES_CANVI = {
+  contrasenya_incorrecta: 'La contrasenya actual no és correcta.',
+  compte_bloquejat: MISSATGES.account_locked,
+  usuari_no_trobat: 'La teva sessió ja no és vàlida. Torna a iniciar sessió.',
+} as const;
+
+export async function canviarContrasenyaAction(
+  _prev: CanviContrasenyaState,
+  formData: FormData
+): Promise<CanviContrasenyaState> {
+  const payload = await getDashboardSession();
+  if (!(await isSessionActive(payload.jti))) return { error: MISSATGES_CANVI.usuari_no_trobat };
+
+  const parsed = canviContrasenyaSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { fields: zodFieldErrors(parsed.error) };
+
+  try {
+    const result = await canviarContrasenya(payload.sub, parsed.data.actual, parsed.data.nova, payload.jti);
+    if (result !== 'ok') return { error: MISSATGES_CANVI[result] };
+  } catch (error) {
+    logger.error('Error en canviar la contrasenya', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { error: "No s'ha pogut canviar la contrasenya. Torna-ho a provar." };
+  }
+
+  return { ok: true };
 }
 
 export async function logoutAction(): Promise<void> {
