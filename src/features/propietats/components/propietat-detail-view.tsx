@@ -1,13 +1,15 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import * as React from 'react';
 import { usePropietat } from '@/hooks/use-propietats';
 import { LoadingSkeleton, ErrorState } from '@/components/shared';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { TIPUS_PROPIETAT_OPTIONS, TIPUS_SOL_OPTIONS } from '@/features/propietats/types';
 import { CAMPS_PER_TIPUS, type CampPerTipus, type TipusPropietat } from '@/lib/validations/propietats';
 import { UnitatsSection } from '@/features/propietats/components/unitats-section';
 import { TitularsSection } from '@/features/propietats/components/titulars-section';
+import { PropietatForm } from '@/features/propietats/components/propietat-form';
 
 interface PropietatDetailViewProps {
   id: string;
@@ -16,6 +18,7 @@ interface PropietatDetailViewProps {
 
 export function PropietatDetailView({ id, canWrite }: PropietatDetailViewProps) {
   const { data: propietat, isLoading, isError, refetch } = usePropietat(id);
+  const [editant, setEditant] = React.useState(false);
 
   if (isLoading) {
     return <LoadingSkeleton variant="detail" sections={2} />;
@@ -23,6 +26,10 @@ export function PropietatDetailView({ id, canWrite }: PropietatDetailViewProps) 
 
   if (isError || !propietat) {
     return <ErrorState onRetry={() => refetch()} />;
+  }
+
+  if (editant) {
+    return <PropietatForm propietat={propietat} onClose={() => setEditant(false)} />;
   }
 
   const tipusLabel = TIPUS_PROPIETAT_OPTIONS.find((o) => o.value === propietat.tipus)?.label ?? propietat.tipus;
@@ -64,13 +71,21 @@ export function PropietatDetailView({ id, canWrite }: PropietatDetailViewProps) 
         </CardContent>
       </Card>
 
+      {canWrite && (
+        <div>
+          <Button variant="outline" onClick={() => setEditant(true)}>
+            Editar
+          </Button>
+        </div>
+      )}
+
       <TitularsSection propietatId={id} canWrite={canWrite} />
       <UnitatsSection propietatId={id} canWrite={canWrite} />
     </div>
   );
 }
 
-function Field({ label, value, className }: { label: string; value: ReactNode; className?: string }) {
+function Field({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
