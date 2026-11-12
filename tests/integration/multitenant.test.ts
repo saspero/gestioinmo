@@ -190,6 +190,24 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
     ]);
 
     await expect(comA((c) => donarBaixaPersona(c, pere.id, 'propietari'))).rejects.toThrow(/propietats associades/);
+
+    // Treure un titular: la resta ha de tornar a sumar 100%.
+    await comA((c) =>
+      actualitzarPropietat(
+        c,
+        propietat.id,
+        actualitzarPropietatSchema.parse({ titulars: [{ personaId: pere.id, percentatge: 100 }] })
+      )
+    );
+    expect(await comA((c) => llistarTitulars(c, propietat.id))).toMatchObject([{ personaId: pere.id, percentatge: 100 }]);
+    expect(await comA((c) => llistarPropietatsDePropietari(c, anna.id))).toEqual([]);
+    // Ja sense propietats, es pot donar de baixa.
+    expect(await comA((c) => donarBaixaPersona(c, anna.id, 'propietari'))).toBe(true);
+
+    // L'últim titular no es pot treure.
+    await expect(
+      comA((c) => actualitzarPropietat(c, propietat.id, actualitzarPropietatSchema.parse({ titulars: [] })))
+    ).rejects.toThrow(/100/);
   });
 
   describe('login', () => {

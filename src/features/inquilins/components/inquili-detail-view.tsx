@@ -16,6 +16,7 @@ import { DataTable } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared/data-table/types';
 import type { Contracte } from '@/hooks/use-contractes';
 import { descripcioRepresentant } from '@/features/persones/components/dades-identificacio';
+import { InquiliForm } from './inquili-form';
 
 interface InquiliDetailViewProps {
   id: string;
@@ -30,6 +31,7 @@ export function InquiliDetailView({ id, canWrite }: InquiliDetailViewProps) {
   const { data: contractesData, isLoading: contractesLoading } = useListContractes({ pageSize: 100 });
   const deleteInquili = useDeleteInquili();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [editant, setEditant] = React.useState(false);
 
   if (isLoading) {
     return <LoadingSkeleton variant="detail" sections={2} />;
@@ -37,6 +39,10 @@ export function InquiliDetailView({ id, canWrite }: InquiliDetailViewProps) {
 
   if (isError || !inquili) {
     return <ErrorState onRetry={() => refetch()} />;
+  }
+
+  if (editant) {
+    return <InquiliForm inquili={inquili} onClose={() => setEditant(false)} />;
   }
 
   const contractesInquili = (contractesData?.data ?? []).filter((c) => c.inquilinsIds.includes(id));
@@ -117,7 +123,10 @@ export function InquiliDetailView({ id, canWrite }: InquiliDetailViewProps) {
       </div>
 
       {canWrite && (
-        <div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setEditant(true)}>
+            Editar
+          </Button>
           <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
             Donar de baixa
           </Button>

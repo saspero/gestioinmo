@@ -6,6 +6,7 @@ import { LoadingSkeleton, ErrorState } from '@/components/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { TIPUS_PROPIETAT_OPTIONS } from '@/features/propietats/types';
 import { UnitatsSection } from '@/features/propietats/components/unitats-section';
+import { TitularsSection } from '@/features/propietats/components/titulars-section';
 
 interface PropietatDetailViewProps {
   id: string;
@@ -42,6 +43,7 @@ export function PropietatDetailView({ id, canWrite }: PropietatDetailViewProps) 
         </CardContent>
       </Card>
 
+      <TitularsSection propietatId={id} canWrite={canWrite} />
       <UnitatsSection propietatId={id} canWrite={canWrite} />
     </div>
   );
