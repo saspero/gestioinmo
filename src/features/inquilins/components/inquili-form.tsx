@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 
-import { useCreateInquili, type CrearInquiliInput } from '@/hooks/use-inquilins';
+import { useCreateInquili, useUpdateInquili, type CrearInquiliInput, type Inquili } from '@/hooks/use-inquilins';
 import { ApiFetchError } from '@/hooks/api-client';
 import { FormField } from '@/components/shared';
 import { Input } from '@/components/ui/input';
@@ -32,11 +32,32 @@ const INITIAL_VALUES: FormValues = {
   notes: '',
 };
 
-export function InquiliForm() {
+function valorsInicials(inquili?: Inquili): FormValues {
+  if (!inquili) return INITIAL_VALUES;
+  return {
+    email: inquili.email ?? '',
+    telefon: inquili.telefon ?? '',
+    iban: inquili.iban ?? '',
+    adreca: inquili.adreca ?? '',
+    notes: inquili.notes ?? '',
+  };
+}
+
+interface InquiliFormProps {
+  /** Amb un inquilí, el formulari l'edita; sense, en crea un de nou. */
+  inquili?: Inquili;
+  /** En edició, tanca el formulari (en desar o cancel·lar). */
+  onClose?: () => void;
+}
+
+export function InquiliForm({ inquili, onClose }: InquiliFormProps = {}) {
   const router = useRouter();
   const createInquili = useCreateInquili();
-  const [identificacio, setIdentificacio] = React.useState(() => valorsIdentificacio());
-  const [values, setValues] = React.useState<FormValues>(INITIAL_VALUES);
+  const updateInquili = useUpdateInquili(inquili?.id ?? '');
+  const editant = inquili !== undefined;
+  const pending = editant ? updateInquili.isPending : createInquili.isPending;
+  const [identificacio, setIdentificacio] = React.useState(() => valorsIdentificacio(inquili));
+  const [values, setValues] = React.useState<FormValues>(() => valorsInicials(inquili));
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
   const [formError, setFormError] = React.useState<string | undefined>(undefined);
 
@@ -59,14 +80,21 @@ export function InquiliForm() {
     };
 
     try {
-      const inquili = await createInquili.mutateAsync(input);
-      toast({ title: 'Inquilí creat', description: `S'ha creat "${inquili.nom}".` });
-      router.push(`/inquilins/${inquili.id}`);
+      if (editant) {
+        await updateInquili.mutateAsync(input);
+        toast({ title: 'Inquilí actualitzat' });
+        onClose?.();
+      } else {
+        const creat = await createInquili.mutateAsync(input);
+        toast({ title: 'Inquilí creat', description: `S'ha creat "${creat.nom}".` });
+        router.push(`/inquilins/${creat.id}`);
+      }
     } catch (error) {
       if (error instanceof ApiFetchError) {
         setFieldErrors(error.fields ?? {});
-        // "Ja existeix un inquilí amb aquest NIF/NIE." (docs/ux-flows.md §3.4)
-        if (error.code === 'CONFLICT' || error.code === 'INTERNAL_ERROR') {
+        // Ex: "Ja existeix un inquilí amb aquest NIF/NIE." (docs/ux-flows.md §3.4). Els
+        // errors de validació ja surten sota cada camp.
+        if (error.code !== 'VALIDATION_ERROR') {
           setFormError(error.message);
         }
       } else {
@@ -111,10 +139,14 @@ export function InquiliForm() {
       </FormField>
 
       <div className="flex gap-2">
-        <Button type="submit" loading={createInquili.isPending}>
-          Crear inquilí
+        <Button type="submit" loading={pending}>
+          {editant ? 'Desar canvis' : 'Crear inquilí'}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.push('/inquilins')}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => (editant ? onClose?.() : router.push('/inquilins'))}
+        >
           Cancel·lar
         </Button>
       </div>
