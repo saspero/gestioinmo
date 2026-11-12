@@ -32,6 +32,15 @@ import {
   llistarPropietatsDePropietari,
   llistarTitulars,
 } from '@/lib/db/propietats';
+import {
+  completarDocument,
+  crearDocument,
+  desarPartDocument,
+  entitatExisteix,
+  esborrarDocument,
+  llegirPartDocument,
+  llistarDocuments,
+} from '@/lib/db/documents';
 import { obtenirContextUsuari, provisionarTenant } from '@/lib/db/tenants';
 import {
   actualitzarTenantConfig,
@@ -43,6 +52,7 @@ import {
 } from '@/lib/db/usuaris';
 import { actualitzarPersonaSchema } from '@/lib/validations/persones';
 import { actualitzarPropietatSchema, crearPropietatSchema } from '@/lib/validations/propietats';
+import { MIDA_PART_DOCUMENT, midaPartDocument } from '@/lib/validations/documents';
 import { crearBdTest } from '../helpers/test-db';
 
 const adminUrl = process.env.TEST_DATABASE_URL;
@@ -424,4 +434,63 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
     const { rows } = await getDomainPool().query('SELECT password_hash FROM public.tenant_users WHERE email = $1', [email]);
     return rows[0].password_hash;
   }
+  it('desa documents xifrats en trossos, els torna sencers i no es veuen des d\'un altre tenant', async () => {
+    const propietat = await comA((c) =>
+      crearPropietat(c, crearPropietatSchema.parse({ referencia: 'DOC-1', tipus: 'pis', adreca: 'Major 9' }))
+    );
+    expect(await comA((c) => entitatExisteix(c, 'propietat', propietat.id))).toBe(true);
+    expect(await comB((c) => entitatExisteix(c, 'propietat', propietat.id))).toBe(false);
+
+    const mida = MIDA_PART_DOCUMENT * 2 + 1234;
+    const fitxer = Buffer.alloc(mida);
+    for (let i = 0; i < mida; i++) fitxer[i] = (i * 7) % 251;
+
+    const document = await comA((c) =>
+      crearDocument(
+        c,
+        { entitat: 'propietat', entitatId: propietat.id, nom: 'escriptura.pdf', mime: 'application/pdf', mida },
+        sessioA.sub
+      )
+    );
+    expect(document).toMatchObject({ parts: 3, pujatPer: 'Admin' });
+
+    const tros = (idx: number) =>
+      fitxer.subarray(idx * MIDA_PART_DOCUMENT, idx * MIDA_PART_DOCUMENT + midaPartDocument(mida, idx));
+    await comA((c) => desarPartDocument(c, document.id, 0, tros(0)));
+    await comA((c) => desarPartDocument(c, document.id, 2, tros(2)));
+
+    // A mitges, no surt al llistat i no es pot completar.
+    expect(await comA((c) => llistarDocuments(c, 'propietat', propietat.id))).toHaveLength(0);
+    await expect(comA((c) => completarDocument(c, document.id))).rejects.toThrow('Encara no ha arribat');
+
+    await comA((c) => desarPartDocument(c, document.id, 1, tros(1)));
+    await comA((c) => completarDocument(c, document.id));
+    expect(await comA((c) => llistarDocuments(c, 'propietat', propietat.id))).toMatchObject([
+      { id: document.id, nom: 'escriptura.pdf', mida },
+    ]);
+
+    const llegit = Buffer.concat(
+      await comA(async (c) => [
+        (await llegirPartDocument(c, document.id, 0))!,
+        (await llegirPartDocument(c, document.id, 1))!,
+        (await llegirPartDocument(c, document.id, 2))!,
+      ])
+    );
+    expect(llegit.equals(fitxer)).toBe(true);
+
+    // Es guarda xifrat: el contingut en clar no apareix a la taula.
+    const { rows } = await comA((c) =>
+      c.query<{ dades_enc: Buffer }>('SELECT dades_enc FROM document_parts WHERE document_id = $1 AND idx = 0', [
+        document.id,
+      ])
+    );
+    expect(rows[0].dades_enc.includes(tros(0).subarray(0, 64))).toBe(false);
+
+    // L'altre tenant no el veu.
+    expect(await comB((c) => llistarDocuments(c, 'propietat', propietat.id))).toHaveLength(0);
+
+    expect(await comA((c) => esborrarDocument(c, document.id))).toBe(true);
+    const parts = await comA((c) => c.query('SELECT 1 FROM document_parts WHERE document_id = $1', [document.id]));
+    expect(parts.rowCount).toBe(0);
+  });
 });

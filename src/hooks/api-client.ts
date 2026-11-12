@@ -68,6 +68,17 @@ export async function apiFetch<T>(input: string, init?: RequestInit): Promise<Ap
   return { data: body.data, meta: body.meta };
 }
 
+/** Com `apiFetch`, però per a respostes binàries (trossos de documents). */
+export async function apiFetchBinary(input: string): Promise<ArrayBuffer> {
+  const response = await fetch(input, { credentials: 'include' });
+  if (response.ok) return response.arrayBuffer();
+
+  const body = (await response.json().catch(() => null)) as ApiErrorEnvelope | null;
+  const code: ApiErrorCode = body?.error?.code ?? 'INTERNAL_ERROR';
+  const message = code === 'INTERNAL_ERROR' ? GENERIC_ERROR_MESSAGE : body?.error?.message ?? GENERIC_ERROR_MESSAGE;
+  throw new ApiFetchError(code, message, body?.error?.fields);
+}
+
 /** Construeix la query string d'un llistat, ometent claus buides/`undefined` (els
  *  schemas Zod de `llistar[Recurs]QuerySchema` tracten l'absència igual que el buit).
  *  Accepta qualsevol interfície de filtres del mòdul (`object`, no `Record<string, ...>`,

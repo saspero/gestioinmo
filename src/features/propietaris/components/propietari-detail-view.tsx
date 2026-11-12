@@ -18,6 +18,7 @@ import { toast } from '@/components/ui/use-toast';
 import { AssociarPropietat } from './associar-propietat';
 import { EditarPropietariForm } from './propietari-form';
 import { descripcioRepresentant } from '@/features/persones/components/dades-identificacio';
+import { DocumentsSection } from '@/features/documents/components/documents-section';
 
 const COLUMNES_PROPIETATS: ColumnDef<PropietatDePropietari>[] = [
   { id: 'referencia', header: 'Referència', cell: (row) => row.referencia },
@@ -111,6 +112,8 @@ export function PropietariDetailView({ id, canWrite }: PropietariDetailViewProps
           />
         )}
       </section>
+
+      <DocumentsSection entitat="persona" entitatId={id} canWrite={canWrite} />
 
       {canWrite && (
         <div className="flex gap-2">

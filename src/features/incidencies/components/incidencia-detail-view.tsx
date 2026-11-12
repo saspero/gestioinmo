@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
 import { ESTAT_INCIDENCIA_EDITABLE_OPTIONS, PRIORITAT_OPTIONS } from '@/features/incidencies/types';
+import { DocumentsSection } from '@/features/documents/components/documents-section';
 
 interface IncidenciaDetailViewProps {
   id: string;
@@ -106,6 +107,7 @@ export function IncidenciaDetailView({ id, canWrite, canReadCost }: IncidenciaDe
       )}
 
       <ComentarisSection incidenciaId={id} />
+      <DocumentsSection entitat="incidencia" entitatId={id} canWrite={canWrite} />
 
       <ResoldreDialog incidenciaId={id} open={resoldreOpen} onOpenChange={setResoldreOpen} />
     </div>
