@@ -353,6 +353,33 @@ de nova referenciant l'anterior.
 Autor opcional com a `persones` (ex: llogater) o `public.tenant_users` (ex: gestor); com
 a mínim un dels dos ha d'estar informat (`incidencia_comentaris_check_autor`).
 
+### 3.14b `documents` / `document_parts` — 019_documents.sql (schema de tenant)
+
+Documents adjunts a propietats, persones (propietaris i inquilins), contractes i
+incidències. L'entitat és polimòrfica (`entitat` + `entitat_id`, sense FK): l'aplicació
+comprova que existeix abans de crear el document (`src/lib/db/documents.ts`).
+
+| Camp | Tipus | Notes |
+|---|---|---|
+| id | UUID PK | |
+| entitat | ENUM `entitat_document` | `propietat`, `persona`, `contracte`, `incidencia` |
+| entitat_id | UUID NOT NULL | |
+| nom | TEXT | Nom original del fitxer (1-255 caràcters) |
+| mime | TEXT | Només els tipus de `TIPUS_DOCUMENT_PERMESOS` (`src/lib/validations/documents.ts`) |
+| mida | INTEGER | Bytes, màxim 10 MB |
+| parts | INTEGER | Nombre de trossos |
+| complet | BOOLEAN | Cert quan han arribat tots els trossos; els incomplets no es llisten i s'esborren al cap d'un dia |
+| pujat_per | UUID FK → `public.tenant_users` | `ON DELETE SET NULL` |
+
+`document_parts` (`document_id`, `idx`, `dades_enc`) guarda el contingut en trossos de
+3 MB xifrats amb `pgp_sym_encrypt_bytea` i `DB_ENCRYPTION_KEY` (§7.1). Es parteix perquè
+una funció de Vercel no accepta ni retorna més de 4,5 MB per petició: el client puja i
+baixa cada tros per separat (`/api/documents/{id}/parts/{idx}`). `ON DELETE CASCADE` des
+de `documents`. Només `documents` té trigger d'auditoria; els trossos no.
+
+La taula `incidencia_adjunts` (007) no la fa servir l'aplicació: els adjunts
+d'incidències també van a `documents`.
+
 ### 3.15b `despeses` — 011_tenant_despeses.sql (schema de tenant)
 
 | Camp | Tipus | Notes |

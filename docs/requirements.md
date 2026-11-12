@@ -93,6 +93,7 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 - El gestor pot afegir una o més unitats a una propietat (ex: un edifici amb diversos pisos).
 - El gestor pot registrar característiques d'una unitat (m², habitacions, banys, moblat, eficiència energètica).
 - El gestor pot adjuntar documents a una propietat o unitat (cèdula d'habitabilitat, certificat energètic, escriptures).
+  - Implementat a la fitxa de la propietat (no per unitat), igual que a persones, contractes i incidències: PDF, imatges, Word, Excel, OpenDocument o text, fins a 10 MB per fitxer (`019_documents.sql`).
 - El gestor pot marcar una unitat com a disponible, ocupada o en manteniment.
 - El gestor pot consultar l'historial de contractes associats a una unitat.
 - El comptable pot consultar (només lectura) el llistat de propietats i unitats.

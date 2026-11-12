@@ -10,6 +10,7 @@ import { CAMPS_PER_TIPUS, type CampPerTipus, type TipusPropietat } from '@/lib/v
 import { UnitatsSection } from '@/features/propietats/components/unitats-section';
 import { TitularsSection } from '@/features/propietats/components/titulars-section';
 import { PropietatForm } from '@/features/propietats/components/propietat-form';
+import { DocumentsSection } from '@/features/documents/components/documents-section';
 
 interface PropietatDetailViewProps {
   id: string;
@@ -81,6 +82,7 @@ export function PropietatDetailView({ id, canWrite }: PropietatDetailViewProps) 
 
       <TitularsSection propietatId={id} canWrite={canWrite} />
       <UnitatsSection propietatId={id} canWrite={canWrite} />
+      <DocumentsSection entitat="propietat" entitatId={id} canWrite={canWrite} />
     </div>
   );
 }

@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
 import { TIPUS_US_OPTIONS } from '@/features/contractes/types';
+import { DocumentsSection } from '@/features/documents/components/documents-section';
 
 interface ContracteDetailViewProps {
   id: string;
@@ -93,6 +94,8 @@ export function ContracteDetailView({ id, canWrite }: ContracteDetailViewProps) 
           )}
         </CardContent>
       </Card>
+
+      <DocumentsSection entitat="contracte" entitatId={id} canWrite={canWrite} />
 
       {canWrite && (
         <div className="flex flex-wrap gap-2">

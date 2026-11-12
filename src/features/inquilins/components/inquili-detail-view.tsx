@@ -17,6 +17,7 @@ import type { ColumnDef } from '@/components/shared/data-table/types';
 import type { Contracte } from '@/hooks/use-contractes';
 import { descripcioRepresentant } from '@/features/persones/components/dades-identificacio';
 import { InquiliForm } from './inquili-form';
+import { DocumentsSection } from '@/features/documents/components/documents-section';
 
 interface InquiliDetailViewProps {
   id: string;
@@ -121,6 +122,8 @@ export function InquiliDetailView({ id, canWrite }: InquiliDetailViewProps) {
           />
         )}
       </div>
+
+      <DocumentsSection entitat="persona" entitatId={id} canWrite={canWrite} />
 
       {canWrite && (
         <div className="flex gap-2">

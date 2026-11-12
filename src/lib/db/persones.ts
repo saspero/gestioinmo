@@ -31,7 +31,7 @@ export interface Persona {
   updatedAt: string;
 }
 
-function getEncryptionKey(): string {
+export function getEncryptionKey(): string {
   const key = process.env.DB_ENCRYPTION_KEY;
   if (!key) {
     throw new Error('DB_ENCRYPTION_KEY no configurada.');
