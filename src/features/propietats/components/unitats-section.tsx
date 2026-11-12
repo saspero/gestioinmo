@@ -31,9 +31,11 @@ const unitatsKey = (propietatId: string) => ['propietats', propietatId, 'unitats
 interface UnitatsSectionProps {
   propietatId: string;
   canWrite: boolean;
+  /** Propietat que es lloga sencera: la seva única unitat es mostra com a "Lloguer". */
+  unica?: boolean;
 }
 
-export function UnitatsSection({ propietatId, canWrite }: UnitatsSectionProps) {
+export function UnitatsSection({ propietatId, canWrite, unica = false }: UnitatsSectionProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
@@ -66,6 +68,10 @@ export function UnitatsSection({ propietatId, canWrite }: UnitatsSectionProps) {
 
   if (isError) {
     return <ErrorState title="No s'han pogut carregar les unitats." onRetry={() => refetch()} />;
+  }
+
+  if (unica && data?.length === 1) {
+    return <LloguerUnitatUnica propietatId={propietatId} unitat={data[0]} />;
   }
 
   return (
@@ -109,6 +115,33 @@ export function UnitatsSection({ propietatId, canWrite }: UnitatsSectionProps) {
         />
       )}
     </div>
+  );
+}
+
+/** Una propietat que es lloga sencera: el gestor no veu la unitat, només l'estat del lloguer. */
+function LloguerUnitatUnica({ propietatId, unitat }: { propietatId: string; unitat: Unitat }) {
+  return (
+    <section className="flex flex-col gap-4">
+      <h2 className="text-sm font-semibold text-foreground">Lloguer</h2>
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-lg border border-border p-4">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Estat</p>
+          <StatusBadge type="unitat" value={unitat.estat} />
+        </div>
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Renda base</p>
+          <p className="text-sm text-foreground">{unitat.rendaBase ? `${unitat.rendaBase} €` : '—'}</p>
+        </div>
+        {unitat.estat === 'vacant' && (
+          <Link
+            href={`/contractes/nou?unitatId=${unitat.id}&propietatId=${propietatId}`}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Crear contracte
+          </Link>
+        )}
+      </div>
+    </section>
   );
 }
 

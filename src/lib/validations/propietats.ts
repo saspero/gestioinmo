@@ -40,6 +40,14 @@ export const CAMPS_PER_TIPUS: Record<TipusPropietat, readonly CampPerTipus[]> = 
   altres: ['superficie'],
 };
 
+/**
+ * Tipus que es lloguen sencers: en donar-los d'alta es crea sola la seva única unitat.
+ * Un edifici en pot tenir diverses i les afegeix el gestor.
+ */
+export function teUnitatUnica(tipus: string): boolean {
+  return tipus !== 'edifici';
+}
+
 const TOTS_ELS_CAMPS_PER_TIPUS: readonly CampPerTipus[] = [
   'superficie',
   'habitacions',

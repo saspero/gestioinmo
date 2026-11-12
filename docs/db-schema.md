@@ -208,6 +208,12 @@ d'un propietari amb percentatge de titularitat que ha de sumar 100%".
 
 ### 3.5 `unitats` — 003_propietats.sql (schema de tenant)
 
+Tots els tipus de propietat menys `edifici` es lloguen sencers i tenen una sola unitat,
+que l'aplicació crea en donar d'alta la propietat (o en canviar-la d'edifici a un altre
+tipus) amb la referència, la planta i la superfície de la propietat
+(`assegurarUnitatUnica`, `src/lib/db/propietats.ts`). `020_unitat_unica.sql` la crea per a
+les propietats que ja existien. A la fitxa, aquesta unitat es mostra com a "Lloguer".
+
 | Camp | Tipus | Notes |
 |---|---|---|
 | id | UUID PK | |

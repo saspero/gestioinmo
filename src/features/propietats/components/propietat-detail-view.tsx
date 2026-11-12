@@ -6,7 +6,12 @@ import { LoadingSkeleton, ErrorState } from '@/components/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TIPUS_PROPIETAT_OPTIONS, TIPUS_SOL_OPTIONS } from '@/features/propietats/types';
-import { CAMPS_PER_TIPUS, type CampPerTipus, type TipusPropietat } from '@/lib/validations/propietats';
+import {
+  CAMPS_PER_TIPUS,
+  teUnitatUnica,
+  type CampPerTipus,
+  type TipusPropietat,
+} from '@/lib/validations/propietats';
 import { UnitatsSection } from '@/features/propietats/components/unitats-section';
 import { TitularsSection } from '@/features/propietats/components/titulars-section';
 import { PropietatForm } from '@/features/propietats/components/propietat-form';
@@ -81,7 +86,7 @@ export function PropietatDetailView({ id, canWrite }: PropietatDetailViewProps) 
       )}
 
       <TitularsSection propietatId={id} canWrite={canWrite} />
-      <UnitatsSection propietatId={id} canWrite={canWrite} />
+      <UnitatsSection propietatId={id} canWrite={canWrite} unica={teUnitatUnica(propietat.tipus)} />
       <DocumentsSection entitat="propietat" entitatId={id} canWrite={canWrite} />
     </div>
   );

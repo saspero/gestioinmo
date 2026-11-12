@@ -30,6 +30,7 @@ import {
   actualitzarPropietat,
   crearPropietat,
   llistarPropietatsDePropietari,
+  llistarUnitats,
   llistarTitulars,
 } from '@/lib/db/propietats';
 import {
@@ -492,5 +493,29 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
     expect(await comA((c) => esborrarDocument(c, document.id))).toBe(true);
     const parts = await comA((c) => c.query('SELECT 1 FROM document_parts WHERE document_id = $1', [document.id]));
     expect(parts.rowCount).toBe(0);
+  });
+
+  it('crea sola la unitat de les propietats que es lloguen senceres, però no la dels edificis', async () => {
+    const pis = await comA((c) =>
+      crearPropietat(
+        c,
+        crearPropietatSchema.parse({ referencia: 'UNI-1', tipus: 'parking', adreca: 'Major 11', planta: '-2', superficie: 12 })
+      )
+    );
+    const unitats = await comA((c) => llistarUnitats(c, pis.id));
+    expect(unitats).toHaveLength(1);
+    expect(unitats[0]).toMatchObject({ referencia: 'UNI-1', planta: '-2', estat: 'vacant' });
+    expect(Number(unitats[0].superficie)).toBe(12);
+
+    const edifici = await comA((c) =>
+      crearPropietat(c, crearPropietatSchema.parse({ referencia: 'UNI-2', tipus: 'edifici', adreca: 'Major 13' }))
+    );
+    expect(await comA((c) => llistarUnitats(c, edifici.id))).toHaveLength(0);
+
+    // Si l'edifici passa a ser una casa, se li crea la unitat; si ja en té, no se n'afegeix cap més.
+    await comA((c) => actualitzarPropietat(c, edifici.id, actualitzarPropietatSchema.parse({ tipus: 'casa' })));
+    expect(await comA((c) => llistarUnitats(c, edifici.id))).toHaveLength(1);
+    await comA((c) => actualitzarPropietat(c, pis.id, actualitzarPropietatSchema.parse({ tipus: 'local' })));
+    expect(await comA((c) => llistarUnitats(c, pis.id))).toHaveLength(1);
   });
 });
