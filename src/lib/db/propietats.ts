@@ -21,6 +21,12 @@ export interface Propietat {
   banys: number | null;
   ascensor: boolean;
   certEnergetic: string | null;
+  referenciaCadastral: string | null;
+  numeroPlaca: string | null;
+  planta: string | null;
+  numPisos: number | null;
+  superficieEdificable: string | null;
+  tipusSol: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -29,6 +35,8 @@ export interface Propietat {
 const PROPIETAT_COLUMNS = `
   id, referencia, tipus, adreca, poblacio, cp, superficie, habitacions, banys,
   ascensor, cert_energetic AS "certEnergetic", notes,
+  referencia_cadastral AS "referenciaCadastral", numero_placa AS "numeroPlaca", planta,
+  num_pisos AS "numPisos", superficie_edificable AS "superficieEdificable", tipus_sol AS "tipusSol",
   created_at AS "createdAt", updated_at AS "updatedAt"
 `;
 
@@ -135,8 +143,9 @@ async function substituirTitulars(
 
 export async function crearPropietat(client: PoolClient, input: CrearPropietat): Promise<Propietat> {
   const { rows } = await client.query<Propietat>(
-    `INSERT INTO propietats (referencia, tipus, adreca, poblacio, cp, superficie, habitacions, banys, ascensor, cert_energetic, notes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `INSERT INTO propietats (referencia, tipus, adreca, poblacio, cp, superficie, habitacions, banys, ascensor, cert_energetic, notes,
+                             referencia_cadastral, numero_placa, planta, num_pisos, superficie_edificable, tipus_sol)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
      RETURNING ${PROPIETAT_COLUMNS}`,
     [
       input.referencia,
@@ -150,6 +159,12 @@ export async function crearPropietat(client: PoolClient, input: CrearPropietat):
       input.ascensor,
       input.certEnergetic ?? null,
       input.notes ?? null,
+      input.referenciaCadastral ?? null,
+      input.numeroPlaca ?? null,
+      input.planta ?? null,
+      input.numPisos ?? null,
+      input.superficieEdificable ?? null,
+      input.tipusSol ?? null,
     ]
   );
   const propietat = rows[0];
@@ -184,6 +199,12 @@ export async function actualitzarPropietat(
   if (input.ascensor !== undefined) push('ascensor', input.ascensor);
   if (input.certEnergetic !== undefined) push('cert_energetic', input.certEnergetic);
   if (input.notes !== undefined) push('notes', input.notes);
+  if (input.referenciaCadastral !== undefined) push('referencia_cadastral', input.referenciaCadastral);
+  if (input.numeroPlaca !== undefined) push('numero_placa', input.numeroPlaca);
+  if (input.planta !== undefined) push('planta', input.planta);
+  if (input.numPisos !== undefined) push('num_pisos', input.numPisos);
+  if (input.superficieEdificable !== undefined) push('superficie_edificable', input.superficieEdificable);
+  if (input.tipusSol !== undefined) push('tipus_sol', input.tipusSol);
 
   let propietat: Propietat | null;
   if (sets.length > 0) {

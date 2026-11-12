@@ -89,7 +89,7 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 **Entitats principals:** `Propietat`, `Unitat`, `Caracteristica`, `Document`
 
 **Funcionalitats:**
-- El gestor pot donar d'alta una propietat (edifici, casa, local) amb adreça i dades cadastrals.
+- El gestor pot donar d'alta una propietat (pis, casa, edifici, local, parking, solar o altres) amb adreça, població, codi postal i referència cadastral (opcional). La resta de dades depenen del tipus: pis i casa (superfície, habitacions, banys, ascensor), parking (superfície, número de plaça, planta), edifici (superfície, ascensor, nombre de pisos), local (superfície, banys, ascensor) i solar (superfície, superfície edificable i tipus de sòl: rural, rústic o urbanitzable).
 - El gestor pot afegir una o més unitats a una propietat (ex: un edifici amb diversos pisos).
 - El gestor pot registrar característiques d'una unitat (m², habitacions, banys, moblat, eficiència energètica).
 - El gestor pot adjuntar documents a una propietat o unitat (cèdula d'habitabilitat, certificat energètic, escriptures).

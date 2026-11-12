@@ -31,6 +31,13 @@ export const TIPUS_PROPIETAT_OPTIONS = [
   { value: 'edifici', label: 'Edifici' },
   { value: 'casa', label: 'Casa' },
   { value: 'local', label: 'Local' },
+  { value: 'parking', label: 'Parking' },
   { value: 'solar', label: 'Solar' },
   { value: 'altres', label: 'Altres' },
+] as const;
+
+export const TIPUS_SOL_OPTIONS = [
+  { value: 'rural', label: 'Rural' },
+  { value: 'rustic', label: 'Rústic' },
+  { value: 'urbanitzable', label: 'Urbanitzable' },
 ] as const;

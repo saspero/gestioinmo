@@ -184,13 +184,19 @@ columna, sinó calculats):
 |---|---|---|
 | id | UUID PK | |
 | referencia | TEXT UNIQUE NOT NULL | |
-| tipus | ENUM `tipus_propietat` | `edifici`, `casa`, `pis`, `local`, `solar`, `altres` |
+| tipus | ENUM `tipus_propietat` | `edifici`, `casa`, `pis`, `local`, `parking` (`018`), `solar`, `altres`. Els camps que té cada tipus els tria `CAMPS_PER_TIPUS` (`src/lib/validations/propietats.ts`) |
 | adreca | TEXT NOT NULL | |
 | poblacio / cp | TEXT | |
 | superficie | NUMERIC(10,2) | |
 | habitacions / banys | INTEGER | |
 | ascensor | BOOLEAN NOT NULL DEFAULT false | |
-| cert_energetic | TEXT | |
+| cert_energetic | TEXT | Pis, casa, edifici i local |
+| referencia_cadastral | TEXT | Opcional, tots els tipus (`018`) |
+| numero_placa | TEXT | Parking |
+| planta | TEXT | Parking |
+| num_pisos | INTEGER | Edifici; > 0 |
+| superficie_edificable | NUMERIC(10,2) | Solar; >= 0 |
+| tipus_sol | ENUM `tipus_sol` | Solar: `rural`, `rustic`, `urbanitzable` |
 | notes | TEXT | |
 | created_at / updated_at / deleted_at | TIMESTAMPTZ | Soft delete |
 
@@ -390,7 +396,8 @@ Alimentada automàticament per triggers `AFTER INSERT OR UPDATE OR DELETE` a
 | ENUM | Schema | Valors |
 |---|---|---|
 | `rol_usuari` | public | admin, gestor, comptable |
-| `tipus_propietat` | tenant | edifici, casa, pis, local, solar, altres |
+| `tipus_propietat` | tenant | edifici, casa, pis, local, parking, solar, altres |
+| `tipus_sol` | tenant | rural, rustic, urbanitzable |
 | `estat_unitat` | tenant | vacant, ocupat, reservat, manteniment, baixa |
 | `tipus_persona` | tenant | propietari, inquili, empresa |
 | `estat_inquili` | tenant | actiu, moros, inactiu |

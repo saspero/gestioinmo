@@ -25,6 +25,7 @@ const MIGRACIONS_TENANT = [
   '013_contractes_fianca_lliure.sql',
   '015_pagaments_marge_venciment.sql',
   '017_persones_juridiques.sql',
+  '018_propietats_camps_per_tipus.sql',
 ] as const;
 
 export interface TenantProvisionat {
