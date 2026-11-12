@@ -39,6 +39,11 @@ CREATE TABLE IF NOT EXISTS document_parts (
   PRIMARY KEY (document_id, idx)
 );
 
+-- RLS activat sense polítiques: tanca l'accés per l'API de dades de Supabase. L'aplicació
+-- es connecta com a propietària de les taules, a qui l'RLS no s'aplica (sense FORCE).
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE document_parts ENABLE ROW LEVEL SECURITY;
+
 -- Només s'audita la fitxa del document; els trossos no (el contingut no ha d'anar a
 -- `auditoria` en clar).
 CREATE OR REPLACE TRIGGER trg_auditoria_documents
