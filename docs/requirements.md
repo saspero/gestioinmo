@@ -201,7 +201,7 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 - El comptable pot marcar un rebut com a cobrat, indicant data i mitjà de pagament.
 - El comptable pot agrupar rebuts en una remesa per a la seva gestió conjunta.
 - El comptable pot generar la liquidació d'un propietari per a un període (rendes cobrades menys despeses/comissió d'agència).
-- El sistema pot marcar un rebut com a vençut quan supera la data límit de pagament sense estar cobrat.
+- El sistema marca un rebut com a vençut quan han passat més de 5 dies des de la data límit de pagament sense estar cobrat. El marge cobreix les transferències, que poden arribar o registrar-se uns dies tard; el mètode de cobrament no canvia la regla.
 - El sistema pot activar l'estat de mora de l'inquilí quan un rebut porta més de 30 dies vençut (regla de negoci, secció 5).
 - El comptable pot exportar el llistat de rebuts i liquidacions en CSV i PDF.
 
@@ -319,7 +319,7 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 
 4. **La fiança es pacta a l'inici del contracte i no va vinculada a la renda vigent.** Ex: amb una renda de 600€/mes, la fiança proposada és de 600€ (una mensualitat), però les parts en poden pactar una altra. Les actualitzacions de renda per IPC (regla #3) no modifiquen la fiança.
 
-5. **Un pagament vençut > 30 dies activa l'estat de mora a l'inquilí.** Ex: si el rebut de gener (venciment 5 de gener) no consta com a cobrat el 4 de febrer, l'inquilí passa automàticament a l'estat `moros`, visible al seu perfil i als informes.
+5. **Un pagament vençut > 30 dies activa l'estat de mora a l'inquilí.** Ex: si el rebut de gener (venciment 5 de gener) no consta com a cobrat el 4 de febrer, l'inquilí passa automàticament a l'estat `moros`, visible al seu perfil i als informes. El rebut es veu com a `vençut` a partir del sisè dia després del venciment (marge per a transferències) i el pas a mora es compta igualment des de la data de venciment. Les transicions s'apliquen cada nit de manera automàtica.
 
 6. **Les incidències es tanquen només quan el gestor les marca com a resoltes.** Ex: encara que el proveïdor extern confirmi la reparació, la incidència roman `en curs` fins que el gestor revisi i marqui manualment l'estat `resolta`.
 

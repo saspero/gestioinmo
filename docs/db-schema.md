@@ -410,7 +410,7 @@ actiu en el moment de la migració), no hi ha una única còpia global.
 |---|---|---|
 | `contractes_unitat_actiu_idx` (índex únic parcial `WHERE estat='actiu'`) | 005 | #2 — una unitat només pot tenir un contracte actiu; un inquilí pot tenir-ne diversos (un per unitat) |
 | `trg_check_percentatge_titularitat` | 004 | Regla 3.3 — el % de titularitat d'una propietat ha de sumar 100 |
-| `trg_sync_estat_inquili_mora` + `marcar_pagaments_vencuts()` | 006 | #5 — pagament vençut > 30 dies activa la mora de l'inquilí |
+| `trg_sync_estat_inquili_mora` + `marcar_pagaments_vencuts()` | 006, 015 | #5 — vençut amb 5 dies de marge; vençut > 30 dies des del venciment activa la mora de l'inquilí |
 | `trg_prevent_reobrir_incidencia` | 007 | #6 — una incidència només es tanca quan el gestor la marca resolta; no es reobre |
 | `trg_prevent_baixa_propietat` | 005 | 3.2 — no es pot donar de baixa una propietat amb unitats amb contractes actius |
 | `trg_prevent_baixa_persona` | 005 | 3.3/3.4 — no es pot donar de baixa un propietari amb propietats actives, ni un inquilí amb contracte actiu |
@@ -423,14 +423,17 @@ actiu en el moment de la migració), no hi ha una única còpia global.
 
 ## 6. Funcions de manteniment que cal programar
 
-`marcar_pagaments_vencuts()` (definida a `006_pagaments.sql`, per tenant) **no s'executa
-sola**: cal invocar-la periòdicament (recomanat: diàriament) via `pg_cron` o un job
-extern, per cada schema de tenant. És responsabilitat de l'agent **DevOps**. Exemple amb
-`pg_cron` (per tenant, cal adaptar el `search_path` dins de la crida):
+`marcar_pagaments_vencuts()` (per tenant, definida a `006_pagaments.sql` i redefinida a
+`015_pagaments_marge_venciment.sql` amb 5 dies de marge) s'executa cada nit a les 03:00
+UTC. La migració global `016_programar_pagaments_vencuts.sql` crea
+`public.marcar_pagaments_vencuts_tots_tenants()`, que recorre `public.tenants` i crida la
+funció de cada schema, i la programa amb `pg_cron` (tasca `gestinmo-pagaments-vencuts`).
+Els tenants nous hi entren sols. On no hi ha `pg_cron` (CI, local) la programació se salta.
+
+Per comprovar-ne les execucions a Supabase:
 
 ```sql
-SELECT cron.schedule('marcar-vencuts-tenant-xxx', '0 3 * * *',
-  $$ SET search_path TO tenant_xxx, public; SELECT marcar_pagaments_vencuts(); $$);
+SELECT status, return_message, start_time FROM cron.job_run_details ORDER BY start_time DESC LIMIT 5;
 ```
 
 ---
