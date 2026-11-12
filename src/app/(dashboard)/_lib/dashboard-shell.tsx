@@ -21,6 +21,7 @@ import {
 import { AppShell } from '@/components/shared/app-shell';
 import type { NavItem } from '@/components/shared/nav-menu';
 import { logoutAction } from '@/features/auth/actions';
+import { RenovacioSessio } from '@/features/auth/components/renovacio-sessio';
 import { can, type Modul, type RolUsuari } from '@/lib/auth/rbac';
 
 const NAVEGACIO: Array<NavItem & { modul: Modul }> = [
@@ -65,6 +66,7 @@ export function DashboardShell({ tenantName, userName, rol, children }: Dashboar
       onLogout={() => startTransition(() => logoutAction())}
       onAccount={() => router.push('/compte')}
     >
+      <RenovacioSessio />
       {children}
     </AppShell>
   );

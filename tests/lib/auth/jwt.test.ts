@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { signToken, verifyToken } from '@/lib/auth/jwt';
+import { necessitaRenovacio, signToken, verifyToken } from '@/lib/auth/jwt';
 
 const USUARI = {
   sub: '11111111-1111-4111-8111-111111111111',
@@ -19,6 +19,13 @@ describe('jwt', () => {
     expect((await verifyToken(await signToken(USUARI, 60)))!.canvi_contrasenya).toBeUndefined();
     const amb = await verifyToken(await signToken({ ...USUARI, canvi_contrasenya: true }, 60));
     expect(amb!.canvi_contrasenya).toBe(true);
+  });
+
+  it('només demana renovar un token viu que ha passat la meitat de la vida', () => {
+    const token = { iat: 1000, exp: 1000 + 3600 };
+    expect(necessitaRenovacio(token, (1000 + 1000) * 1000)).toBe(false); // 1000 s de 3600
+    expect(necessitaRenovacio(token, (1000 + 2000) * 1000)).toBe(true); // 2000 s de 3600
+    expect(necessitaRenovacio(token, (1000 + 3600) * 1000)).toBe(false); // ja ha caducat
   });
 
   it("calcula l'expiració a partir dels minuts del tenant", async () => {

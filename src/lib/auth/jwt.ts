@@ -73,3 +73,12 @@ export async function verifyToken(token: string): Promise<JwtPayload | null> {
     return null;
   }
 }
+
+/**
+ * Renovació lliscant: un token es renova quan n'ha passat més de la meitat de la vida.
+ * Abans no cal, i així una sessió activa no escriu a la BD a cada clic.
+ */
+export function necessitaRenovacio(payload: Pick<JwtPayload, 'iat' | 'exp'>, araMs: number = Date.now()): boolean {
+  const ara = Math.floor(araMs / 1000);
+  return ara < payload.exp && payload.exp - ara < (payload.exp - payload.iat) / 2;
+}

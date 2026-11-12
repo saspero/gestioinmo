@@ -271,6 +271,53 @@ export async function reemetreSessio(
 }
 
 /**
+ * Allarga una sessió encara activa amb l'expiració vigent del tenant i en torna un JWT
+ * nou amb el mateix `jti`. Rol i indicador de canvi de contrasenya es llegeixen de la BD,
+ * de manera que un canvi de rol s'aplica a la renovació següent.
+ *
+ * Retorna `null` si la sessió s'ha revocat o ha caducat, o si l'usuari ja no està actiu:
+ * qui crida ha de tancar la sessió.
+ */
+export async function renovarSessio(payload: JwtPayload): Promise<{ token: string; expiresAt: Date } | null> {
+  const { rows } = await getAuthPool().query<{
+    expires_at: Date;
+    rol: RolUsuari;
+    canvi_contrasenya_obligatori: boolean;
+    jwt_expiracio_minuts: number;
+  }>(
+    `UPDATE public.tenant_user_sessions s
+        SET expires_at = now() + make_interval(mins => t.jwt_expiracio_minuts)
+       FROM public.tenant_users tu
+       JOIN public.tenants t ON t.id = tu.tenant_id
+      WHERE s.token_jti = $1
+        AND s.tenant_user_id = tu.id
+        AND tu.id = $2
+        AND tu.tenant_id = $3
+        AND s.revoked_at IS NULL
+        AND s.expires_at > now()
+        AND tu.actiu
+        AND tu.deleted_at IS NULL
+      RETURNING s.expires_at, tu.rol, tu.canvi_contrasenya_obligatori, t.jwt_expiracio_minuts`,
+    [payload.jti, payload.sub, payload.tenant_id]
+  );
+
+  const sessio = rows[0];
+  if (!sessio) return null;
+
+  const token = await signToken(
+    {
+      sub: payload.sub,
+      tenant_id: payload.tenant_id,
+      rol: sessio.rol,
+      jti: payload.jti,
+      ...(sessio.canvi_contrasenya_obligatori ? { canvi_contrasenya: true as const } : {}),
+    },
+    sessio.jwt_expiracio_minuts
+  );
+  return { token, expiresAt: sessio.expires_at };
+}
+
+/**
  * Consulta si una sessió segueix activa a `tenant_user_sessions` (ni revocada ni
  * expirada). El middleware d'Edge Runtime confia en l'`exp` del JWT per a la majoria de
  * peticions; aquesta funció es reserva per a operacions sensibles que criden

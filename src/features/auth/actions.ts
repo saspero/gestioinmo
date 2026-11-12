@@ -5,13 +5,14 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { getDashboardSession } from '@/app/(dashboard)/_lib/session';
-import { verifyToken } from '@/lib/auth/jwt';
+import { necessitaRenovacio, verifyToken } from '@/lib/auth/jwt';
 import {
   AUTH_COOKIE_NAME,
   canviarContrasenya,
   isSessionActive,
   login,
   reemetreSessio,
+  renovarSessio,
   revokeSession,
   type LoginMeta,
 } from '@/lib/auth/session';
@@ -118,6 +119,37 @@ export async function canviarContrasenyaAction(
   // Era la contrasenya temporal: ja pot fer servir l'aplicació.
   if (payload.canvi_contrasenya) redirect('/');
   return { ok: true };
+}
+
+export type RenovacioSessio = 'vigent' | 'renovada' | 'caducada';
+
+/**
+ * La crida el client quan hi ha activitat. Només toca la BD quan ha passat més de la
+ * meitat de la vida del token; si la sessió s'ha revocat o l'usuari s'ha desactivat,
+ * esborra la cookie i respon `caducada` perquè el client torni al login.
+ */
+export async function renovarSessioAction(): Promise<RenovacioSessio> {
+  const store = await cookies();
+  const token = store.get(AUTH_COOKIE_NAME)?.value;
+  const payload = token ? await verifyToken(token) : null;
+  if (!payload) return 'caducada';
+  if (!necessitaRenovacio(payload)) return 'vigent';
+
+  try {
+    const nova = await renovarSessio(payload);
+    if (!nova) {
+      store.delete(AUTH_COOKIE_NAME);
+      return 'caducada';
+    }
+    await desarCookieSessio(nova.token, nova.expiresAt);
+    return 'renovada';
+  } catch (error) {
+    // Un error puntual no ha de treure l'usuari: el token actual encara és vàlid.
+    logger.error("No s'ha pogut renovar la sessió", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return 'vigent';
+  }
 }
 
 export async function logoutAction(): Promise<void> {

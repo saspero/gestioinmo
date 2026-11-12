@@ -12,6 +12,7 @@ import {
   isSessionActive,
   login,
   reemetreSessio,
+  renovarSessio,
   revokeAllSessions,
   revokeSession,
 } from '@/lib/auth/session';
@@ -214,6 +215,30 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
       const reemesa = await reemetreSessio(actual.payload, {});
       expect((await verifyToken(reemesa.token))?.canvi_contrasenya).toBeUndefined();
       expect(await isSessionActive(actual.payload.jti)).toBe(false);
+    });
+
+    it('renova una sessió activa amb el mateix jti i rebutja les revocades o de comptes desactivats', async () => {
+      const { token } = await createSession({ id: sessioB.sub, tenantId: tenantB, rol: 'admin' }, {}, 1);
+      const payload = (await verifyToken(token))!;
+
+      const renovada = await renovarSessio(payload);
+      expect(renovada).not.toBeNull();
+      const nou = (await verifyToken(renovada!.token))!;
+      expect(nou.jti).toBe(payload.jti);
+      // La sessió d'1 minut s'allarga fins a l'expiració configurada al tenant.
+      const { jwtExpiracioMinuts } = (await obtenirTenantConfig(tenantB))!;
+      expect(nou.exp - nou.iat).toBe(jwtExpiracioMinuts * 60);
+      expect(renovada!.expiresAt.getTime()).toBeGreaterThan(Date.now() + (jwtExpiracioMinuts - 1) * 60_000);
+      expect(await isSessionActive(payload.jti)).toBe(true);
+
+      await revokeSession(payload.jti);
+      expect(await renovarSessio(payload)).toBeNull();
+
+      await crearUsuari(tenantA, { email: 'renova@test.cat', nom: 'Renova', rol: 'gestor' }, await hashDe('a@test.cat'));
+      const id = await idUsuari('renova@test.cat');
+      const altra = await createSession({ id, tenantId: tenantA, rol: 'gestor' }, {}, 60);
+      await canviarEstatUsuari(tenantA, id, false);
+      expect(await renovarSessio((await verifyToken(altra.token))!)).toBeNull();
     });
 
     it("l'administrador de l'alta només ha de canviar la contrasenya si era generada", async () => {
