@@ -39,19 +39,20 @@ export interface PropietarisFilters extends PaginationParams {
   q?: string;
 }
 
+/** En editar, `null` esborra el camp i un camp absent el deixa com estava. En una alta no s'envia mai `null`. */
 export interface PropietariInput {
   personaJuridica?: boolean;
   nom: string;
-  cognoms?: string;
-  nif?: string;
-  email?: string;
-  telefon?: string;
-  iban?: string;
-  adreca?: string;
-  notes?: string;
-  representantNom?: string;
-  representantNif?: string;
-  representantCarrec?: string;
+  cognoms?: string | null;
+  nif?: string | null;
+  email?: string | null;
+  telefon?: string | null;
+  iban?: string | null;
+  adreca?: string | null;
+  notes?: string | null;
+  representantNom?: string | null;
+  representantNif?: string | null;
+  representantCarrec?: string | null;
 }
 
 export const propietarisKeys = {

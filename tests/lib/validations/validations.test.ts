@@ -6,7 +6,7 @@ import { crearContracteSchema } from '@/lib/validations/contractes';
 import { crearDespesaSchema } from '@/lib/validations/despeses';
 import { actualitzarIncidenciaSchema } from '@/lib/validations/incidencies';
 import { crearPagamentSchema, crearRemesaSchema } from '@/lib/validations/pagaments';
-import { crearPropietariSchema } from '@/lib/validations/persones';
+import { actualitzarPersonaSchema, crearPropietariSchema } from '@/lib/validations/persones';
 import {
   actualitzarPropietatSchema,
   crearPropietatSchema,
@@ -107,6 +107,18 @@ describe('propietats', () => {
 });
 
 describe('persones', () => {
+  it('en editar, accepta null per esborrar camps però no el nom', () => {
+    expect(actualitzarPersonaSchema.parse({ email: null, nif: null, representantNif: null })).toEqual({
+      email: null,
+      nif: null,
+      representantNif: null,
+    });
+    expect(actualitzarPersonaSchema.safeParse({ nom: null }).success).toBe(false);
+    expect(actualitzarPersonaSchema.safeParse({ email: 'no-és-email' }).success).toBe(false);
+    // En una alta, null no té sentit.
+    expect(crearPropietariSchema.safeParse({ nom: 'A', email: null }).success).toBe(false);
+  });
+
   it('valida el format del NIF', () => {
     expect(crearPropietariSchema.safeParse({ nom: 'A', nif: '12345678Z' }).success).toBe(true);
     expect(crearPropietariSchema.safeParse({ nom: 'A', nif: '12-34' }).success).toBe(false);

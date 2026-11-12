@@ -41,6 +41,7 @@ import {
   obtenirTenantConfig,
   restablirContrasenyaUsuari,
 } from '@/lib/db/usuaris';
+import { actualitzarPersonaSchema } from '@/lib/validations/persones';
 import { actualitzarPropietatSchema, crearPropietatSchema } from '@/lib/validations/propietats';
 import { crearBdTest } from '../helpers/test-db';
 
@@ -103,6 +104,12 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
 
     const actualitzada = await comB((c) => actualitzarPersona(c, persona.id, 'propietari', { telefon: '600' }));
     expect(actualitzada?.telefon).toBe('600');
+
+    // `null` esborra el camp (també els xifrats); un camp absent no es toca.
+    const buidada = await comB((c) =>
+      actualitzarPersona(c, persona.id, 'propietari', actualitzarPersonaSchema.parse({ telefon: null, iban: null }))
+    );
+    expect(buidada).toMatchObject({ telefon: null, iban: null, nif: '12345678Z' });
   });
 
   it('desa persones jurídiques amb representant i en neteja els camps en canviar de tipus', async () => {

@@ -47,17 +47,30 @@ export function descripcioRepresentant(persona: DadesIdentificacioPersona): stri
   return `${persona.representantNom}${nif}${carrec}`;
 }
 
-/** Converteix els valors del formulari en l'entrada de l'API: només envia els camps del tipus triat. */
-export function identificacioInput(values: DadesIdentificacioValues) {
+/**
+ * Valor d'un camp opcional per a l'API. En una alta, un camp buit no s'envia; en una
+ * edició s'envia `null` perquè el servidor l'esborri (si no, es mantindria el valor antic).
+ */
+export function valorOpcional(valor: string, edicio: boolean): string | null | undefined {
+  if (valor) return valor;
+  return edicio ? null : undefined;
+}
+
+/**
+ * Converteix els valors del formulari en l'entrada de l'API: només envia els camps del
+ * tipus triat. Els de l'altre tipus els buida el servidor en canviar de tipus.
+ */
+export function identificacioInput(values: DadesIdentificacioValues, edicio = false) {
   const juridica = values.personaJuridica;
+  const opcional = (valor: string) => valorOpcional(valor, edicio);
   return {
     personaJuridica: juridica,
     nom: values.nom,
-    nif: values.nif || undefined,
-    cognoms: juridica ? undefined : values.cognoms || undefined,
-    representantNom: juridica ? values.representantNom || undefined : undefined,
-    representantNif: juridica ? values.representantNif || undefined : undefined,
-    representantCarrec: juridica ? values.representantCarrec || undefined : undefined,
+    nif: opcional(values.nif),
+    cognoms: juridica ? undefined : opcional(values.cognoms),
+    representantNom: juridica ? opcional(values.representantNom) : undefined,
+    representantNif: juridica ? opcional(values.representantNif) : undefined,
+    representantCarrec: juridica ? opcional(values.representantCarrec) : undefined,
   };
 }
 

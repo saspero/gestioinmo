@@ -34,7 +34,20 @@ export type CrearPropietari = z.infer<typeof crearPropietariSchema>;
 export const crearInquiliSchema = basePersonaSchema;
 export type CrearInquili = z.infer<typeof crearInquiliSchema>;
 
-export const actualitzarPersonaSchema = basePersonaSchema.partial();
+// En editar, `null` vol dir "esborra aquest camp" i un camp absent, "no el toquis". El
+// nom no es pot esborrar.
+export const actualitzarPersonaSchema = basePersonaSchema.partial().extend({
+  cognoms: basePersonaSchema.shape.cognoms.unwrap().nullable().optional(),
+  nif: nifSchema.nullable().optional(),
+  email: basePersonaSchema.shape.email.unwrap().nullable().optional(),
+  telefon: basePersonaSchema.shape.telefon.unwrap().nullable().optional(),
+  iban: basePersonaSchema.shape.iban.unwrap().nullable().optional(),
+  adreca: basePersonaSchema.shape.adreca.unwrap().nullable().optional(),
+  notes: basePersonaSchema.shape.notes.unwrap().nullable().optional(),
+  representantNom: basePersonaSchema.shape.representantNom.unwrap().nullable().optional(),
+  representantNif: nifSchema.nullable().optional(),
+  representantCarrec: basePersonaSchema.shape.representantCarrec.unwrap().nullable().optional(),
+});
 export type ActualitzarPersona = z.infer<typeof actualitzarPersonaSchema>;
 
 export const llistarPersonesQuerySchema = paginationQuerySchema.extend({
