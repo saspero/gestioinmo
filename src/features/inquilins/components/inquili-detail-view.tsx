@@ -15,6 +15,7 @@ import { toast } from '@/components/ui/use-toast';
 import { DataTable } from '@/components/shared';
 import type { ColumnDef } from '@/components/shared/data-table/types';
 import type { Contracte } from '@/hooks/use-contractes';
+import { descripcioRepresentant } from '@/features/persones/components/dades-identificacio';
 
 interface InquiliDetailViewProps {
   id: string;
@@ -81,8 +82,12 @@ export function InquiliDetailView({ id, canWrite }: InquiliDetailViewProps) {
 
       <Card>
         <CardContent className="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Nom" value={`${inquili.nom} ${inquili.cognoms ?? ''}`.trim()} />
-          <Field label="NIF/NIE" value={inquili.nif ?? '—'} />
+          <Field
+            label={inquili.personaJuridica ? 'Raó social' : 'Nom'}
+            value={`${inquili.nom} ${inquili.cognoms ?? ''}`.trim()}
+          />
+          <Field label={inquili.personaJuridica ? 'CIF' : 'DNI/NIE'} value={inquili.nif ?? '—'} />
+          {inquili.personaJuridica && <Field label="Representant legal" value={descripcioRepresentant(inquili)} />}
           <Field
             label="Estat"
             value={inquili.estatInquili ? <StatusBadge type="inquili" value={inquili.estatInquili} /> : '—'}

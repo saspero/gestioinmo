@@ -230,6 +230,10 @@ L'estat es sincronitza automàticament: `vacant → ocupat` en activar-se un con
 | email_enc | BYTEA | Email de contacte xifrat |
 | iban_enc | BYTEA | IBAN xifrat |
 | estat_inquili | ENUM `estat_inquili` | `actiu`, `moros`, `inactiu`; `NOT NULL` només si `tipus = 'inquili'` |
+| persona_juridica | BOOLEAN | NOT NULL DEFAULT false (`017`). Si és jurídica, `nom` és la raó social, `nif` el CIF i `cognoms` és NULL |
+| representant_nom | TEXT | Només persones jurídiques |
+| representant_nif_enc | BYTEA | NIF del representant, xifrat amb pgcrypto; sense hash perquè no ha de ser únic |
+| representant_carrec | TEXT | Només persones jurídiques |
 | created_at / updated_at / deleted_at | TIMESTAMPTZ | |
 
 `nif`, `iban` i `email` **no es guarden en clar** (§7 "Seguretat de base de dades").

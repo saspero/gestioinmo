@@ -25,6 +25,8 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   contractes_check_dates: "La data de fi ha de ser posterior a la data d'inici.",
   persones_nif_hash_actiu_unique: 'Ja existeix una persona activa amb aquest NIF/CIF.',
   persones_estat_inquili_coherent: 'Estat de mora no vàlid per al tipus de persona indicat.',
+  persones_juridica_coherent:
+    'Una persona jurídica no té cognoms, i una persona física no té representant legal.',
   propietats_referencia_unique: 'Ja existeix una propietat amb aquesta referència.',
   unitats_propietat_referencia_unique: 'Ja existeix una unitat amb aquesta referència a la mateixa propietat.',
   remeses_referencia_unique: 'Ja existeix una remesa amb aquesta referència.',

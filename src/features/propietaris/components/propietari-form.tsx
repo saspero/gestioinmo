@@ -15,20 +15,24 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import {
+  DadesIdentificacio,
+  identificacioInput,
+  valorsIdentificacio,
+  type DadesIdentificacioValues,
+} from '@/features/persones/components/dades-identificacio';
 
-type Camp = keyof PropietariInput;
+type Camp = 'email' | 'telefon' | 'iban' | 'adreca' | 'notes';
 
-const CAMPS: Camp[] = ['nom', 'cognoms', 'nif', 'email', 'telefon', 'iban', 'adreca', 'notes'];
+const CAMPS: Camp[] = ['email', 'telefon', 'iban', 'adreca', 'notes'];
 
 function valorsInicials(propietari?: Propietari): Record<Camp, string> {
   return Object.fromEntries(CAMPS.map((camp) => [camp, propietari?.[camp] ?? ''])) as Record<Camp, string>;
 }
 
-function ambValor(values: Record<Camp, string>): PropietariInput {
+function ambValor(identificacio: DadesIdentificacioValues, values: Record<Camp, string>): PropietariInput {
   return {
-    nom: values.nom,
-    cognoms: values.cognoms || undefined,
-    nif: values.nif || undefined,
+    ...identificacioInput(identificacio),
     email: values.email || undefined,
     telefon: values.telefon || undefined,
     iban: values.iban || undefined,
@@ -46,6 +50,7 @@ interface FormBodyProps {
 }
 
 function PropietariFormBody({ propietari, submitLabel, pending, onSubmit, onCancel }: FormBodyProps) {
+  const [identificacio, setIdentificacio] = React.useState(() => valorsIdentificacio(propietari));
   const [values, setValues] = React.useState(() => valorsInicials(propietari));
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
   const [formError, setFormError] = React.useState<string | undefined>(undefined);
@@ -61,7 +66,7 @@ function PropietariFormBody({ propietari, submitLabel, pending, onSubmit, onCanc
     setFormError(undefined);
     setFieldErrors({});
     try {
-      await onSubmit(ambValor(values));
+      await onSubmit(ambValor(identificacio, values));
     } catch (error) {
       if (error instanceof ApiFetchError) {
         setFieldErrors(error.fields ?? {});
@@ -80,18 +85,11 @@ function PropietariFormBody({ propietari, submitLabel, pending, onSubmit, onCanc
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="Nom o raó social" required error={fieldErrors.nom}>
-          <Input {...bind('nom')} required />
-        </FormField>
-        <FormField label="Cognoms" error={fieldErrors.cognoms}>
-          <Input {...bind('cognoms')} />
-        </FormField>
-      </div>
-
-      <FormField label="NIF/CIF" error={fieldErrors.nif}>
-        <Input {...bind('nif')} />
-      </FormField>
+      <DadesIdentificacio
+        values={identificacio}
+        onChange={(camp, valor) => setIdentificacio((prev) => ({ ...prev, [camp]: valor }))}
+        errors={fieldErrors}
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Email" error={fieldErrors.email}>
