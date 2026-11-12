@@ -200,6 +200,38 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
     expect(Number(solar.superficieEdificable)).toBe(400);
   });
 
+  it('en editar, esborra camps buidats i els del tipus anterior', async () => {
+    const pis = await comA((c) =>
+      crearPropietat(
+        c,
+        crearPropietatSchema.parse({
+          referencia: 'PIS-ED',
+          tipus: 'pis',
+          adreca: 'Major 5',
+          referenciaCadastral: '9999999AB1234C0001XY',
+          habitacions: 3,
+          ascensor: true,
+        })
+      )
+    );
+
+    const parking = await comA((c) =>
+      actualitzarPropietat(
+        c,
+        pis.id,
+        actualitzarPropietatSchema.parse({ tipus: 'parking', numeroPlaca: '7', referenciaCadastral: null })
+      )
+    );
+    expect(parking).toMatchObject({
+      tipus: 'parking',
+      numeroPlaca: '7',
+      referenciaCadastral: null,
+      habitacions: null,
+      ascensor: false,
+      adreca: 'Major 5',
+    });
+  });
+
   it('exigeix que els titulars sumin 100% i conserva la resta de camps', async () => {
     const pere = await comA((c) => crearPersona(c, 'propietari', { nom: 'Pere' }));
     const anna = await comA((c) => crearPersona(c, 'propietari', { nom: 'Anna' }));

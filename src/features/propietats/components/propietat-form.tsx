@@ -3,7 +3,13 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 
-import { useCreatePropietat, type CrearPropietatInput } from '@/hooks/use-propietats';
+import {
+  useCreatePropietat,
+  useUpdatePropietat,
+  type ActualitzarPropietatInput,
+  type CrearPropietatInput,
+  type Propietat,
+} from '@/hooks/use-propietats';
 import { ApiFetchError } from '@/hooks/api-client';
 import { FormField } from '@/components/shared';
 import { Input } from '@/components/ui/input';
@@ -13,7 +19,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { TIPUS_PROPIETAT_OPTIONS, TIPUS_SOL_OPTIONS } from '@/features/propietats/types';
-import { CAMPS_PER_TIPUS, type CampPerTipus, type TipusPropietat } from '@/lib/validations/propietats';
+import {
+  CAMPS_PER_TIPUS,
+  tipusPropietatEnum,
+  type CampPerTipus,
+  type TipusPropietat,
+} from '@/lib/validations/propietats';
 
 type FormValues = {
   referencia: string;
@@ -55,13 +66,43 @@ const INITIAL_VALUES: FormValues = {
   notes: '',
 };
 
-const numero = (valor: string) => (valor ? Number(valor) : undefined);
-const text = (valor: string) => valor || undefined;
+const textInicial = (valor: string | number | null) => (valor === null ? '' : String(valor));
 
-/** Només envia els camps del tipus triat (el servidor també descarta la resta). */
-function construirInput(values: FormValues): CrearPropietatInput {
+function valorsInicials(propietat?: Propietat): FormValues {
+  if (!propietat) return INITIAL_VALUES;
+  const tipus = tipusPropietatEnum.safeParse(propietat.tipus);
+  return {
+    referencia: propietat.referencia,
+    tipus: tipus.success ? tipus.data : 'altres',
+    adreca: propietat.adreca,
+    poblacio: textInicial(propietat.poblacio),
+    cp: textInicial(propietat.cp),
+    referenciaCadastral: textInicial(propietat.referenciaCadastral),
+    superficie: textInicial(propietat.superficie),
+    habitacions: textInicial(propietat.habitacions),
+    banys: textInicial(propietat.banys),
+    ascensor: propietat.ascensor,
+    certEnergetic: textInicial(propietat.certEnergetic),
+    numeroPlaca: textInicial(propietat.numeroPlaca),
+    planta: textInicial(propietat.planta),
+    numPisos: textInicial(propietat.numPisos),
+    superficieEdificable: textInicial(propietat.superficieEdificable),
+    tipusSol: textInicial(propietat.tipusSol),
+    notes: textInicial(propietat.notes),
+  };
+}
+
+/**
+ * Converteix el formulari en l'entrada de l'API. Només hi van els camps del tipus triat.
+ * En una alta, un camp buit no s'envia; en una edició s'envia `null` perquè s'esborri,
+ * i els camps que el tipus no té també s'esborren (el servidor fa el mateix).
+ */
+export function construirInput(values: FormValues, edicio: boolean): ActualitzarPropietatInput {
   const propis = new Set<CampPerTipus>(CAMPS_PER_TIPUS[values.tipus]);
-  const si = <T,>(camp: CampPerTipus, valor: T) => (propis.has(camp) ? valor : undefined);
+  const buit = edicio ? null : undefined;
+  const text = (valor: string) => valor || buit;
+  const numero = (valor: string) => (valor ? Number(valor) : buit);
+  const si = <T,>(camp: CampPerTipus, valor: T) => (propis.has(camp) ? valor : buit);
   return {
     referencia: values.referencia,
     tipus: values.tipus,
@@ -72,21 +113,31 @@ function construirInput(values: FormValues): CrearPropietatInput {
     superficie: si('superficie', numero(values.superficie)),
     habitacions: si('habitacions', numero(values.habitacions)),
     banys: si('banys', numero(values.banys)),
-    ascensor: si('ascensor', values.ascensor) ?? false,
+    ascensor: propis.has('ascensor') ? values.ascensor : false,
     certEnergetic: si('certEnergetic', text(values.certEnergetic)),
     numeroPlaca: si('numeroPlaca', text(values.numeroPlaca)),
     planta: si('planta', text(values.planta)),
     numPisos: si('numPisos', numero(values.numPisos)),
     superficieEdificable: si('superficieEdificable', numero(values.superficieEdificable)),
-    tipusSol: si('tipusSol', (values.tipusSol || undefined) as CrearPropietatInput['tipusSol']),
+    tipusSol: si('tipusSol', (values.tipusSol || buit) as ActualitzarPropietatInput['tipusSol']),
     notes: text(values.notes),
   };
 }
 
-export function PropietatForm() {
+interface PropietatFormProps {
+  /** Amb una propietat, el formulari l'edita; sense, en crea una de nova. */
+  propietat?: Propietat;
+  /** En edició, tanca el formulari (en desar o cancel·lar). */
+  onClose?: () => void;
+}
+
+export function PropietatForm({ propietat, onClose }: PropietatFormProps = {}) {
   const router = useRouter();
   const createPropietat = useCreatePropietat();
-  const [values, setValues] = React.useState<FormValues>(INITIAL_VALUES);
+  const updatePropietat = useUpdatePropietat(propietat?.id ?? '');
+  const editant = propietat !== undefined;
+  const pending = editant ? updatePropietat.isPending : createPropietat.isPending;
+  const [values, setValues] = React.useState<FormValues>(() => valorsInicials(propietat));
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
   const [formError, setFormError] = React.useState<string | undefined>(undefined);
 
@@ -109,9 +160,15 @@ export function PropietatForm() {
     setFieldErrors({});
 
     try {
-      const propietat = await createPropietat.mutateAsync(construirInput(values));
-      toast({ title: 'Propietat creada', description: `S'ha creat "${propietat.referencia}".` });
-      router.push(`/propietats/${propietat.id}`);
+      if (editant) {
+        await updatePropietat.mutateAsync(construirInput(values, true));
+        toast({ title: 'Canvis desats', description: "S'ha actualitzat la propietat." });
+        onClose?.();
+      } else {
+        const nova = await createPropietat.mutateAsync(construirInput(values, false) as CrearPropietatInput);
+        toast({ title: 'Propietat creada', description: `S'ha creat "${nova.referencia}".` });
+        router.push(`/propietats/${nova.id}`);
+      }
     } catch (error) {
       if (error instanceof ApiFetchError) {
         setFieldErrors(error.fields ?? {});
@@ -238,10 +295,14 @@ export function PropietatForm() {
       </FormField>
 
       <div className="flex gap-2">
-        <Button type="submit" loading={createPropietat.isPending}>
-          Crear propietat
+        <Button type="submit" loading={pending}>
+          {editant ? 'Desar canvis' : 'Crear propietat'}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.push('/propietats')}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => (editant ? onClose?.() : router.push('/propietats'))}
+        >
           Cancel·lar
         </Button>
       </div>

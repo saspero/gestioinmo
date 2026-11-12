@@ -134,6 +134,28 @@ describe('propietats', () => {
     expect(parsed).not.toHaveProperty('ascensor');
   });
 
+  it('en editar, accepta null per esborrar camps', () => {
+    expect(actualitzarPropietatSchema.parse({ superficie: null, referenciaCadastral: null, notes: null })).toEqual({
+      superficie: null,
+      referenciaCadastral: null,
+      notes: null,
+    });
+    expect(actualitzarPropietatSchema.safeParse({ adreca: null }).success).toBe(false);
+  });
+
+  it('en canviar el tipus, esborra els camps que el tipus nou no té', () => {
+    const parsed = actualitzarPropietatSchema.parse({ tipus: 'parking', numeroPlaca: '12', habitacions: 3 });
+    expect(parsed).toMatchObject({
+      tipus: 'parking',
+      numeroPlaca: '12',
+      habitacions: null,
+      banys: null,
+      tipusSol: null,
+      ascensor: false,
+    });
+    expect(parsed).not.toHaveProperty('superficie');
+  });
+
   it('limita el percentatge de titularitat a (0, 100]', () => {
     expect(titularSchema.safeParse({ personaId: UUID, percentatge: 100 }).success).toBe(true);
     expect(titularSchema.safeParse({ personaId: UUID, percentatge: 0 }).success).toBe(false);

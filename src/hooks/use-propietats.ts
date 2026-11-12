@@ -59,7 +59,12 @@ export interface CrearPropietatInput {
   titulars?: Titular[];
 }
 
-export type ActualitzarPropietatInput = Partial<CrearPropietatInput>;
+type CampObligatori = 'referencia' | 'tipus' | 'adreca' | 'ascensor' | 'titulars';
+
+/** En editar, `null` esborra el camp i un camp absent el deixa com estava. */
+export type ActualitzarPropietatInput = Partial<Pick<CrearPropietatInput, CampObligatori>> & {
+  [K in Exclude<keyof CrearPropietatInput, CampObligatori>]?: CrearPropietatInput[K] | null;
+};
 
 // Factory de claus de caché del mòdul: cap hook en construeix una manualment
 // (docs/agents/AGENT_STATE.md §1).

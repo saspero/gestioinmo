@@ -85,11 +85,41 @@ export const crearPropietatSchema = basePropietatSchema.transform((data) => {
 });
 export type CrearPropietat = z.infer<typeof crearPropietatSchema>;
 
-// Zod 4 aplica `.default()` encara que el camp sigui opcional: sense redefinir aquests
-// dos camps, qualsevol PATCH parcial reescriuria `tipus` i `ascensor` amb el valor per defecte.
-export const actualitzarPropietatSchema = basePropietatSchema.partial().extend({
+const opcionalEsborrable = <T extends z.ZodType>(schema: T) => schema.nullable().optional();
+const base = basePropietatSchema.shape;
+
+// En editar, `null` vol dir "esborra aquest camp" i un camp absent, "no el toquis".
+// Zod 4 aplica `.default()` encara que el camp sigui opcional: sense redefinir `tipus` i
+// `ascensor`, qualsevol PATCH parcial els reescriuria amb el valor per defecte.
+const actualitzarPropietatBaseSchema = basePropietatSchema.partial().extend({
   tipus: tipusPropietatEnum.optional(),
   ascensor: z.boolean().optional(),
+  poblacio: opcionalEsborrable(base.poblacio.unwrap()),
+  cp: opcionalEsborrable(base.cp.unwrap()),
+  referenciaCadastral: opcionalEsborrable(base.referenciaCadastral.unwrap()),
+  superficie: opcionalEsborrable(base.superficie.unwrap()),
+  habitacions: opcionalEsborrable(base.habitacions.unwrap()),
+  banys: opcionalEsborrable(base.banys.unwrap()),
+  certEnergetic: opcionalEsborrable(base.certEnergetic.unwrap()),
+  numeroPlaca: opcionalEsborrable(base.numeroPlaca.unwrap()),
+  planta: opcionalEsborrable(base.planta.unwrap()),
+  numPisos: opcionalEsborrable(base.numPisos.unwrap()),
+  superficieEdificable: opcionalEsborrable(base.superficieEdificable.unwrap()),
+  tipusSol: opcionalEsborrable(tipusSolEnum),
+  notes: opcionalEsborrable(base.notes.unwrap()),
+});
+
+/** Si canvia el tipus, s'esborren els camps que el tipus nou no té. */
+export const actualitzarPropietatSchema = actualitzarPropietatBaseSchema.transform((data) => {
+  if (data.tipus === undefined) return data;
+  const propis = CAMPS_PER_TIPUS[data.tipus];
+  const net = { ...data };
+  for (const camp of TOTS_ELS_CAMPS_PER_TIPUS) {
+    if (propis.includes(camp)) continue;
+    if (camp === 'ascensor') net.ascensor = false;
+    else net[camp] = null;
+  }
+  return net;
 });
 export type ActualitzarPropietat = z.infer<typeof actualitzarPropietatSchema>;
 
