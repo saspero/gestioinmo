@@ -39,7 +39,7 @@ Coincident amb l'estructura d'`docs/architecture.md` §2 (`src/app/(dashboard)/*
 | Contractes | `/contractes` | `/contractes` | `/contractes/[id]` | `/contractes/nou` | — |
 | Pagaments | `/pagaments` | `/pagaments` | `/pagaments/[id]` | — (es generen, no es creen a mà) | `/pagaments/remeses` |
 | Incidències | `/incidencies` | `/incidencies` | `/incidencies/[id]` | `/incidencies/nou` | — |
-| Informes | `/informes` | — (és el propi dashboard) | — | — | `/informes` |
+| Dashboard | `/dashboard` | — (és el propi dashboard) | — | — | `/dashboard` |
 | Configuració (Auth & Multitenancy, 3.1) | `/configuracio` | — | — | — | Dades del tenant, usuaris interns |
 | Portal del llogater [fase final] | `(portal)` | — | — | — | Vegeu §3.9 |
 
@@ -55,7 +55,7 @@ sense JWT vàlid hi redirigeix.
 **Flux principal (login)**:
 1. L'usuari introdueix email i contrasenya a `/login`.
 2. Enviar → estat de càrrega al botó (`useFormStatus`).
-3. Èxit → redirecció a `/informes` (dashboard per defecte).
+3. Èxit → redirecció a `/dashboard` (pantalla d'inici).
 4. Error de credencials → missatge genèric sota el formulari (§3.1 "Missatges
    d'error"), el formulari no es buida el camp email.
 
@@ -308,10 +308,13 @@ incidències que ell mateix ha reportat — vegeu §3.9.
 **Punt d'entrada**: menú "Informes" (ruta per defecte en entrar a l'aplicació).
 
 **Flux principal**:
-1. `/informes` — quadre d'indicadors: ocupació (% unitats ocupades), morositat (import i
+1. `/dashboard` — quadre d'indicadors: ocupació (% unitats ocupades), morositat (import i
    nombre d'inquilins en mora), ingressos previstos vs. cobrats del mes/període
    seleccionat, incidències obertes per prioritat.
-2. Filtres globals de la pàgina: rang de dates, propietat, propietari.
+2. Filtres globals de la pàgina: rang de dates, propietat, propietari. Sense dates triades,
+   el període és l'any en curs (de l'1 de gener al 31 de desembre), i cada cop que s'obre
+   el dashboard torna a començar per l'any en curs. `/informes` queda reservat per a la
+   pestanya d'informes (en pantalla i PDF) i, mentre no existeixi, redirigeix aquí.
 3. Cada indicador enllaça al llistat filtrat corresponent (ex: clicar "Incidències
    obertes: 4" porta a `/incidencies?estat=oberta`).
 4. Acció "Exportar" (CSV/PDF) disponible a cada llistat del sistema (Propietats,

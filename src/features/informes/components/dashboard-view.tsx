@@ -17,15 +17,19 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { FormField } from '@/components/shared';
 import type { DashboardIndicadors } from '@/features/informes/types';
+import { anyEnCurs, periodeDashboard } from '@/features/informes/periode';
 
 export function DashboardView() {
-  const [dataInici, setDataInici] = React.useState('');
-  const [dataFi, setDataFi] = React.useState('');
+  // Per defecte, l'any en curs. L'estat no es desa enlloc: cada cop que s'obre el
+  // dashboard (també després de tornar a iniciar sessió) torna a començar per l'any en curs.
+  const [dataInici, setDataInici] = React.useState(() => anyEnCurs().inici);
+  const [dataFi, setDataFi] = React.useState(() => anyEnCurs().fi);
   const [propietatId, setPropietatId] = React.useState('');
 
   const { data: propietats } = useListPropietats({ pageSize: 100 });
 
-  const filters = { dataInici: dataInici || undefined, dataFi: dataFi || undefined, propietatId: propietatId || undefined };
+  const periode = periodeDashboard(dataInici, dataFi);
+  const filters = { ...periode, propietatId: propietatId || undefined };
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['informes', 'dashboard', filters],
@@ -33,7 +37,7 @@ export function DashboardView() {
       apiFetch<DashboardIndicadors>(`/api/informes/dashboard${buildQueryString(filters)}`).then((res) => res.data),
   });
 
-  if (dataInici && dataFi && dataInici > dataFi) {
+  if (periode.dataInici > periode.dataFi) {
     return (
       <div className="flex flex-col gap-6">
         <FiltersForm

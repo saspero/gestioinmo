@@ -93,6 +93,41 @@ describe('propietats', () => {
     expect(crearPropietatSchema.parse({ referencia: 'A', adreca: 'B' })).toMatchObject({ tipus: 'pis', ascensor: false });
   });
 
+  it('en crear, descarta els camps que no corresponen al tipus', () => {
+    const tots = {
+      referencia: 'A',
+      adreca: 'B',
+      referenciaCadastral: '1234567AB1234C0001XY',
+      superficie: 12,
+      habitacions: 3,
+      banys: 1,
+      ascensor: true,
+      numeroPlaca: '42',
+      planta: '-1',
+      numPisos: 4,
+      superficieEdificable: 300,
+      tipusSol: 'urbanitzable' as const,
+    };
+    const parking = crearPropietatSchema.parse({ ...tots, tipus: 'parking' });
+    expect(parking).toMatchObject({ superficie: 12, numeroPlaca: '42', planta: '-1', ascensor: false });
+    expect(parking).not.toHaveProperty('habitacions');
+    expect(parking).not.toHaveProperty('tipusSol');
+    // La referència cadastral la tenen tots els tipus.
+    expect(parking.referenciaCadastral).toBe('1234567AB1234C0001XY');
+
+    const solar = crearPropietatSchema.parse({ ...tots, tipus: 'solar' });
+    expect(solar).toMatchObject({ superficieEdificable: 300, tipusSol: 'urbanitzable', ascensor: false });
+    expect(solar).not.toHaveProperty('banys');
+
+    const edifici = crearPropietatSchema.parse({ ...tots, tipus: 'edifici' });
+    expect(edifici).toMatchObject({ numPisos: 4, ascensor: true });
+    expect(edifici).not.toHaveProperty('numeroPlaca');
+
+    const local = crearPropietatSchema.parse({ ...tots, tipus: 'local' });
+    expect(local).toMatchObject({ banys: 1, ascensor: true });
+    expect(local).not.toHaveProperty('habitacions');
+  });
+
   it('un PATCH parcial no reescriu camps amb valor per defecte', () => {
     const parsed = actualitzarPropietatSchema.parse({ titulars: [{ personaId: UUID, percentatge: 100 }] });
     expect(parsed).not.toHaveProperty('tipus');

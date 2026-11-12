@@ -159,6 +159,47 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
     expect(await comA((c) => obtenirPersona(c, persona.id, 'propietari'))).not.toBeNull();
   });
 
+  it('desa els camps propis de parkings i solars', async () => {
+    const parking = await comA((c) =>
+      crearPropietat(
+        c,
+        crearPropietatSchema.parse({
+          referencia: 'PK-1',
+          tipus: 'parking',
+          adreca: 'Major 3',
+          referenciaCadastral: '1234567AB1234C0001XY',
+          superficie: 12.5,
+          numeroPlaca: '42',
+          planta: '-1',
+          habitacions: 2,
+        })
+      )
+    );
+    expect(parking).toMatchObject({
+      tipus: 'parking',
+      referenciaCadastral: '1234567AB1234C0001XY',
+      numeroPlaca: '42',
+      planta: '-1',
+      habitacions: null,
+    });
+
+    const solar = await comA((c) =>
+      crearPropietat(
+        c,
+        crearPropietatSchema.parse({
+          referencia: 'SOL-1',
+          tipus: 'solar',
+          adreca: 'Camí',
+          superficie: 1000,
+          superficieEdificable: 400,
+          tipusSol: 'rustic',
+        })
+      )
+    );
+    expect(solar).toMatchObject({ tipus: 'solar', tipusSol: 'rustic', ascensor: false });
+    expect(Number(solar.superficieEdificable)).toBe(400);
+  });
+
   it('exigeix que els titulars sumin 100% i conserva la resta de camps', async () => {
     const pere = await comA((c) => crearPersona(c, 'propietari', { nom: 'Pere' }));
     const anna = await comA((c) => crearPersona(c, 'propietari', { nom: 'Anna' }));

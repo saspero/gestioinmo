@@ -21,6 +21,12 @@ export interface Propietat {
   banys: number | null;
   ascensor: boolean;
   certEnergetic: string | null;
+  referenciaCadastral: string | null;
+  numeroPlaca: string | null;
+  planta: string | null;
+  numPisos: number | null;
+  superficieEdificable: string | null;
+  tipusSol: 'rural' | 'rustic' | 'urbanitzable' | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -43,6 +49,12 @@ export interface CrearPropietatInput {
   banys?: number;
   ascensor?: boolean;
   certEnergetic?: string;
+  referenciaCadastral?: string;
+  numeroPlaca?: string;
+  planta?: string;
+  numPisos?: number;
+  superficieEdificable?: number;
+  tipusSol?: 'rural' | 'rustic' | 'urbanitzable';
   notes?: string;
   titulars?: Titular[];
 }
