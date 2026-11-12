@@ -25,7 +25,7 @@ import { RenovacioSessio } from '@/features/auth/components/renovacio-sessio';
 import { can, type Modul, type RolUsuari } from '@/lib/auth/rbac';
 
 const NAVEGACIO: Array<NavItem & { modul: Modul }> = [
-  { label: 'Informes', href: '/informes', modul: 'informes', icon: BarChart3 },
+  { label: 'Dashboard', href: '/dashboard', modul: 'informes', icon: BarChart3 },
   { label: 'Propietats', href: '/propietats', modul: 'propietats', icon: Building2 },
   { label: 'Propietaris', href: '/propietaris', modul: 'propietaris', icon: UserRound },
   { label: 'Inquilins', href: '/inquilins', modul: 'inquilins', icon: Users },

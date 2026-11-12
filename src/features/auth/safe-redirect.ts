@@ -1,4 +1,4 @@
-export const RUTA_PER_DEFECTE = '/informes';
+export const RUTA_PER_DEFECTE = '/dashboard';
 
 /** Només admet rutes internes: evita un open redirect via `/login?from=//altre-domini`. */
 export function rutaSegura(from: unknown): string {
