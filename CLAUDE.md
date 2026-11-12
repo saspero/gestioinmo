@@ -204,9 +204,9 @@ Si estàs llegint aquest fitxer com a agent de Claude Code:
 | Definició d'agents | ✅ Completat |
 | Requirements | ✅ Completat |
 | Arquitectura | ✅ Completat |
-| BDD / Migracions | ✅ Completat (`001`-`016` aplicades a Supabase; `012`, `014` i `016` són globals) |
+| BDD / Migracions | ✅ Completat (`001`-`017` aplicades a Supabase; `012`, `014` i `016` són globals) |
 | Auth | ✅ Login, logout, sessions, RBAC, alta de tenants, canvi de contrasenya (`/compte`, obligatori amb una contrasenya temporal) i restabliment per l'administrador. Renovació lliscant de la sessió mentre hi ha activitat. Falta: recuperació per correu |
-| Mòduls funcionals | 🟡 Mòduls 1-8 fets. Falta: documents adjunts, persona jurídica i liquidacions de propietaris |
+| Mòduls funcionals | 🟡 Mòduls 1-8 fets. Propietaris i inquilins físics o jurídics. Falta: documents adjunts i liquidacions de propietaris |
 | Tests | 🟡 `src/lib` cobert (unitaris + integració amb PostgreSQL real). Falten components i route handlers |
 | Deploy | ✅ Producció a Vercel, cada merge a `main` desplega |
 | Portal del llogater | ⏳ Pendent (última fase) |

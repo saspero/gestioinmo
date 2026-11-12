@@ -15,6 +15,10 @@ export interface Inquili {
   iban: string | null;
   adreca: string | null;
   notes: string | null;
+  personaJuridica: boolean;
+  representantNom: string | null;
+  representantNif: string | null;
+  representantCarrec: string | null;
   estatInquili: 'actiu' | 'moros' | 'inactiu' | null;
   createdAt: string;
   updatedAt: string;
@@ -26,6 +30,7 @@ export interface InquilinsFilters extends PaginationParams {
 }
 
 export interface CrearInquiliInput {
+  personaJuridica?: boolean;
   nom: string;
   cognoms?: string;
   nif?: string;
@@ -34,6 +39,9 @@ export interface CrearInquiliInput {
   iban?: string;
   adreca?: string;
   notes?: string;
+  representantNom?: string;
+  representantNif?: string;
+  representantCarrec?: string;
 }
 
 export type ActualitzarInquiliInput = Partial<CrearInquiliInput>;

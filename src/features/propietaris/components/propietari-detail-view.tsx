@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { AssociarPropietat } from './associar-propietat';
 import { EditarPropietariForm } from './propietari-form';
+import { descripcioRepresentant } from '@/features/persones/components/dades-identificacio';
 
 const COLUMNES_PROPIETATS: ColumnDef<PropietatDePropietari>[] = [
   { id: 'referencia', header: 'Referència', cell: (row) => row.referencia },
@@ -72,8 +73,11 @@ export function PropietariDetailView({ id, canWrite }: PropietariDetailViewProps
     <div className="flex flex-col gap-6">
       <Card>
         <CardContent className="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Nom" value={nomComplet} />
-          <Field label="NIF/CIF" value={propietari.nif ?? '—'} />
+          <Field label={propietari.personaJuridica ? 'Raó social' : 'Nom'} value={nomComplet} />
+          <Field label={propietari.personaJuridica ? 'CIF' : 'DNI/NIE'} value={propietari.nif ?? '—'} />
+          {propietari.personaJuridica && (
+            <Field label="Representant legal" value={descripcioRepresentant(propietari)} />
+          )}
           <Field label="Email" value={propietari.email ?? '—'} />
           <Field label="Telèfon" value={propietari.telefon ?? '—'} />
           <Field label="IBAN" value={propietari.iban ?? '—'} />

@@ -4,14 +4,23 @@ import { paginationQuerySchema } from './common';
 export const tipusPersonaEnum = z.enum(['propietari', 'inquili', 'empresa']);
 export const estatInquiliEnum = z.enum(['actiu', 'moros', 'inactiu']);
 
+const nifSchema = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z0-9]{5,15}$/, 'NIF/CIF no vàlid');
+
+// `personaJuridica` no porta valor per defecte: a `actualitzarPersonaSchema` (parcial),
+// un default faria tornar a física qualsevol persona jurídica en editar-ne un altre camp.
+// La BD hi posa `false` en crear.
 const basePersonaSchema = z.object({
+  personaJuridica: z.boolean().optional(),
+  /** Nom de la persona física o raó social de la jurídica. */
   nom: z.string().trim().min(1, 'El nom és obligatori'),
   cognoms: z.string().trim().optional(),
-  nif: z
-    .string()
-    .trim()
-    .regex(/^[A-Za-z0-9]{5,15}$/, 'NIF/CIF no vàlid')
-    .optional(),
+  nif: nifSchema.optional(),
+  representantNom: z.string().trim().optional(),
+  representantNif: nifSchema.optional(),
+  representantCarrec: z.string().trim().optional(),
   email: z.string().trim().email('Email no vàlid').optional(),
   telefon: z.string().trim().optional(),
   iban: z.string().trim().optional(),

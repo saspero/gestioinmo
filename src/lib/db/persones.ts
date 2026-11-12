@@ -23,6 +23,10 @@ export interface Persona {
   adreca: string | null;
   notes: string | null;
   estatInquili: string | null;
+  personaJuridica: boolean;
+  representantNom: string | null;
+  representantNif: string | null;
+  representantCarrec: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,6 +46,10 @@ const PERSONA_COLUMNS = `
   telefon,
   pgp_sym_decrypt(iban_enc, $1) AS iban,
   adreca, notes, estat_inquili AS "estatInquili",
+  persona_juridica AS "personaJuridica",
+  representant_nom AS "representantNom",
+  pgp_sym_decrypt(representant_nif_enc, $1) AS "representantNif",
+  representant_carrec AS "representantCarrec",
   created_at AS "createdAt", updated_at AS "updatedAt"
 `;
 
@@ -93,6 +101,10 @@ export async function obtenirPersona(client: PoolClient, id: string, tipus: Tipu
 }
 
 interface CrearPersonaInput {
+  personaJuridica?: boolean;
+  representantNom?: string;
+  representantNif?: string;
+  representantCarrec?: string;
   nom: string;
   cognoms?: string;
   nif?: string;
@@ -105,8 +117,11 @@ interface CrearPersonaInput {
 
 export async function crearPersona(client: PoolClient, tipus: TipusPersona, input: CrearPersonaInput): Promise<Persona> {
   const key = getEncryptionKey();
+  // Física: sense representant. Jurídica: sense cognoms (constraint persones_juridica_coherent).
+  const juridica = input.personaJuridica ?? false;
   const { rows } = await client.query<{ id: string }>(
-    `INSERT INTO persones (tipus, nom, cognoms, nif_enc, nif_hash, email_enc, telefon, iban_enc, adreca, notes)
+    `INSERT INTO persones (tipus, nom, cognoms, nif_enc, nif_hash, email_enc, telefon, iban_enc, adreca, notes,
+                           persona_juridica, representant_nom, representant_nif_enc, representant_carrec)
      VALUES (
        $1, $2, $3,
        CASE WHEN $4::text IS NULL THEN NULL ELSE pgp_sym_encrypt($4, $9) END,
@@ -114,13 +129,16 @@ export async function crearPersona(client: PoolClient, tipus: TipusPersona, inpu
        CASE WHEN $5::text IS NULL THEN NULL ELSE pgp_sym_encrypt($5, $9) END,
        $6,
        CASE WHEN $7::text IS NULL THEN NULL ELSE pgp_sym_encrypt($7, $9) END,
-       $8, $10
+       $8, $10,
+       $11, $12,
+       CASE WHEN $13::text IS NULL THEN NULL ELSE pgp_sym_encrypt($13, $9) END,
+       $14
      )
      RETURNING id`,
     [
       tipus,
       input.nom,
-      input.cognoms ?? null,
+      juridica ? null : (input.cognoms ?? null),
       input.nif ?? null,
       input.email ?? null,
       input.telefon ?? null,
@@ -128,6 +146,10 @@ export async function crearPersona(client: PoolClient, tipus: TipusPersona, inpu
       input.adreca ?? null,
       key,
       input.notes ?? null,
+      juridica,
+      juridica ? (input.representantNom ?? null) : null,
+      juridica ? (input.representantNif ?? null) : null,
+      juridica ? (input.representantCarrec ?? null) : null,
     ]
   );
 
@@ -164,8 +186,25 @@ export async function actualitzarPersona(
     }
   };
 
+  // Canviar de física a jurídica (o al revés) buida els camps que deixen de tenir sentit.
+  // Els camps que el canvi buida no es poden assignar a la mateixa sentència.
+  const juridica = input.personaJuridica;
+  if (juridica !== undefined) {
+    push('persona_juridica', juridica);
+    if (juridica) {
+      sets.push('cognoms = NULL');
+    } else {
+      sets.push('representant_nom = NULL', 'representant_nif_enc = NULL', 'representant_carrec = NULL');
+    }
+  }
+  if (juridica !== false) {
+    if (input.representantNom !== undefined) push('representant_nom', input.representantNom);
+    if (input.representantCarrec !== undefined) push('representant_carrec', input.representantCarrec);
+    pushEncrypted('representant_nif_enc', null, input.representantNif);
+  }
+
   if (input.nom !== undefined) push('nom', input.nom);
-  if (input.cognoms !== undefined) push('cognoms', input.cognoms);
+  if (input.cognoms !== undefined && juridica !== true) push('cognoms', input.cognoms);
   if (input.telefon !== undefined) push('telefon', input.telefon);
   if (input.adreca !== undefined) push('adreca', input.adreca);
   if (input.notes !== undefined) push('notes', input.notes);

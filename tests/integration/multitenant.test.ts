@@ -105,6 +105,46 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
     expect(actualitzada?.telefon).toBe('600');
   });
 
+  it('desa persones jurídiques amb representant i en neteja els camps en canviar de tipus', async () => {
+    const empresa = await comA((c) =>
+      crearPersona(c, 'inquili', {
+        personaJuridica: true,
+        nom: 'Lloguers SL',
+        cognoms: 'ignorat',
+        nif: 'B12345678',
+        representantNom: 'Joan Puig',
+        representantNif: '87654321X',
+        representantCarrec: 'Administrador únic',
+      })
+    );
+    expect(empresa).toMatchObject({
+      personaJuridica: true,
+      cognoms: null,
+      nif: 'B12345678',
+      representantNom: 'Joan Puig',
+      representantNif: '87654321X',
+      representantCarrec: 'Administrador únic',
+    });
+
+    // Una física mai guarda representant, encara que el rebi.
+    const fisica = await comA((c) => crearPersona(c, 'inquili', { nom: 'Pere', representantNom: 'Ningú' }));
+    expect(fisica).toMatchObject({ personaJuridica: false, representantNom: null });
+
+    const aFisica = await comA((c) =>
+      actualitzarPersona(c, empresa.id, 'inquili', { personaJuridica: false, cognoms: 'Lloguers', representantNom: 'x' })
+    );
+    expect(aFisica).toMatchObject({ personaJuridica: false, cognoms: 'Lloguers', representantNom: null, representantNif: null });
+
+    const aJuridica = await comA((c) =>
+      actualitzarPersona(c, empresa.id, 'inquili', { personaJuridica: true, cognoms: 'x', representantCarrec: 'Apoderat' })
+    );
+    expect(aJuridica).toMatchObject({ personaJuridica: true, cognoms: null, representantCarrec: 'Apoderat' });
+
+    // Editar un altre camp no la torna a física.
+    const editada = await comA((c) => actualitzarPersona(c, empresa.id, 'inquili', { telefon: '930000000' }));
+    expect(editada?.personaJuridica).toBe(true);
+  });
+
   it("no deixa veure ni escriure dades d'un altre tenant", async () => {
     const persona = await comA((c) => crearPersona(c, 'propietari', { nom: 'Només A' }));
     expect(await comB((c) => obtenirPersona(c, persona.id, 'propietari'))).toBeNull();

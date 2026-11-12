@@ -10,11 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import {
+  DadesIdentificacio,
+  identificacioInput,
+  valorsIdentificacio,
+} from '@/features/persones/components/dades-identificacio';
 
 type FormValues = {
-  nom: string;
-  cognoms: string;
-  nif: string;
   email: string;
   telefon: string;
   iban: string;
@@ -23,9 +25,6 @@ type FormValues = {
 };
 
 const INITIAL_VALUES: FormValues = {
-  nom: '',
-  cognoms: '',
-  nif: '',
   email: '',
   telefon: '',
   iban: '',
@@ -36,6 +35,7 @@ const INITIAL_VALUES: FormValues = {
 export function InquiliForm() {
   const router = useRouter();
   const createInquili = useCreateInquili();
+  const [identificacio, setIdentificacio] = React.useState(() => valorsIdentificacio());
   const [values, setValues] = React.useState<FormValues>(INITIAL_VALUES);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
   const [formError, setFormError] = React.useState<string | undefined>(undefined);
@@ -50,9 +50,7 @@ export function InquiliForm() {
     setFieldErrors({});
 
     const input: CrearInquiliInput = {
-      nom: values.nom,
-      cognoms: values.cognoms || undefined,
-      nif: values.nif || undefined,
+      ...identificacioInput(identificacio),
       email: values.email || undefined,
       telefon: values.telefon || undefined,
       iban: values.iban || undefined,
@@ -85,18 +83,11 @@ export function InquiliForm() {
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField label="Nom" required error={fieldErrors.nom}>
-          <Input value={values.nom} onChange={(event) => setField('nom', event.target.value)} required />
-        </FormField>
-        <FormField label="Cognoms" error={fieldErrors.cognoms}>
-          <Input value={values.cognoms} onChange={(event) => setField('cognoms', event.target.value)} />
-        </FormField>
-      </div>
-
-      <FormField label="NIF/NIE" error={fieldErrors.nif}>
-        <Input value={values.nif} onChange={(event) => setField('nif', event.target.value)} />
-      </FormField>
+      <DadesIdentificacio
+        values={identificacio}
+        onChange={(camp, valor) => setIdentificacio((prev) => ({ ...prev, [camp]: valor }))}
+        errors={fieldErrors}
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Email" error={fieldErrors.email}>

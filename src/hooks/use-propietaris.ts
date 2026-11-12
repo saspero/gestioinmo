@@ -14,6 +14,10 @@ export interface Propietari {
   iban: string | null;
   adreca: string | null;
   notes: string | null;
+  personaJuridica: boolean;
+  representantNom: string | null;
+  representantNif: string | null;
+  representantCarrec: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,6 +40,7 @@ export interface PropietarisFilters extends PaginationParams {
 }
 
 export interface PropietariInput {
+  personaJuridica?: boolean;
   nom: string;
   cognoms?: string;
   nif?: string;
@@ -44,6 +49,9 @@ export interface PropietariInput {
   iban?: string;
   adreca?: string;
   notes?: string;
+  representantNom?: string;
+  representantNif?: string;
+  representantCarrec?: string;
 }
 
 export const propietarisKeys = {
