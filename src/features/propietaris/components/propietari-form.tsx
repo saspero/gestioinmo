@@ -18,6 +18,7 @@ import { toast } from '@/components/ui/use-toast';
 import {
   DadesIdentificacio,
   identificacioInput,
+  valorOpcional,
   valorsIdentificacio,
   type DadesIdentificacioValues,
 } from '@/features/persones/components/dades-identificacio';
@@ -30,14 +31,14 @@ function valorsInicials(propietari?: Propietari): Record<Camp, string> {
   return Object.fromEntries(CAMPS.map((camp) => [camp, propietari?.[camp] ?? ''])) as Record<Camp, string>;
 }
 
-function ambValor(identificacio: DadesIdentificacioValues, values: Record<Camp, string>): PropietariInput {
+function ambValor(identificacio: DadesIdentificacioValues, values: Record<Camp, string>, edicio: boolean): PropietariInput {
   return {
-    ...identificacioInput(identificacio),
-    email: values.email || undefined,
-    telefon: values.telefon || undefined,
-    iban: values.iban || undefined,
-    adreca: values.adreca || undefined,
-    notes: values.notes || undefined,
+    ...identificacioInput(identificacio, edicio),
+    email: valorOpcional(values.email, edicio),
+    telefon: valorOpcional(values.telefon, edicio),
+    iban: valorOpcional(values.iban, edicio),
+    adreca: valorOpcional(values.adreca, edicio),
+    notes: valorOpcional(values.notes, edicio),
   };
 }
 
@@ -66,7 +67,7 @@ function PropietariFormBody({ propietari, submitLabel, pending, onSubmit, onCanc
     setFormError(undefined);
     setFieldErrors({});
     try {
-      await onSubmit(ambValor(identificacio, values));
+      await onSubmit(ambValor(identificacio, values, propietari !== undefined));
     } catch (error) {
       if (error instanceof ApiFetchError) {
         setFieldErrors(error.fields ?? {});

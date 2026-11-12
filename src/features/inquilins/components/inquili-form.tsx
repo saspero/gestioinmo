@@ -13,6 +13,7 @@ import { toast } from '@/components/ui/use-toast';
 import {
   DadesIdentificacio,
   identificacioInput,
+  valorOpcional,
   valorsIdentificacio,
 } from '@/features/persones/components/dades-identificacio';
 
@@ -71,12 +72,12 @@ export function InquiliForm({ inquili, onClose }: InquiliFormProps = {}) {
     setFieldErrors({});
 
     const input: CrearInquiliInput = {
-      ...identificacioInput(identificacio),
-      email: values.email || undefined,
-      telefon: values.telefon || undefined,
-      iban: values.iban || undefined,
-      adreca: values.adreca || undefined,
-      notes: values.notes || undefined,
+      ...identificacioInput(identificacio, editant),
+      email: valorOpcional(values.email, editant),
+      telefon: valorOpcional(values.telefon, editant),
+      iban: valorOpcional(values.iban, editant),
+      adreca: valorOpcional(values.adreca, editant),
+      notes: valorOpcional(values.notes, editant),
     };
 
     try {
