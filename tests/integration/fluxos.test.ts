@@ -254,6 +254,20 @@ describe.skipIf(!adminUrl)('fluxos de negoci amb PostgreSQL real', () => {
       expect((await amb((c) => obtenirPersona(c, inquiliId, 'inquili')))?.estatInquili).toBe('actiu');
     });
 
+    it('deixa 5 dies de marge abans de marcar un rebut com a vençut, a tots els tenants', async () => {
+      const faDies = (dies: number) => new Date(Date.now() - dies * 86_400_000).toISOString().slice(0, 10);
+      const recent = await nouRebut(faDies(3));
+      const passat = await nouRebut(faDies(7));
+
+      // La mateixa crida que fa pg_cron cada nit.
+      await getDomainPool().query('SELECT public.marcar_pagaments_vencuts_tots_tenants()');
+
+      expect((await amb((c) => obtenirPagament(c, recent.id)))?.estat).toBe('pendent');
+      expect((await amb((c) => obtenirPagament(c, passat.id)))?.estat).toBe('vencut');
+      // Vençut però encara no en mora: l'inquilí no passa a morós.
+      expect((await amb((c) => obtenirPersona(c, inquiliId, 'inquili')))?.estatInquili).toBe('actiu');
+    });
+
     it('anul·la un rebut amb soft delete', async () => {
       const rebut = await nouRebut('2026-12-01');
       expect(await amb((c) => anularPagament(c, rebut.id))).toBe(true);
