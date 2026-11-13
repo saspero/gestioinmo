@@ -1,12 +1,13 @@
 import type { PoolClient } from 'pg';
 import { buildLimitOffsetClause, buildOrderByClause, buildMeta } from './pagination';
 import { BusinessRuleError } from './business-error';
-import type {
-  CrearPropietat,
-  ActualitzarPropietat,
-  LlistarPropietatsQuery,
-  CrearUnitat,
-  ActualitzarUnitat,
+import {
+  teUnitatUnica,
+  type CrearPropietat,
+  type ActualitzarPropietat,
+  type LlistarPropietatsQuery,
+  type CrearUnitat,
+  type ActualitzarUnitat,
 } from '../validations/propietats';
 
 export interface Propietat {
@@ -172,8 +173,27 @@ export async function crearPropietat(client: PoolClient, input: CrearPropietat):
   if (input.titulars && input.titulars.length > 0) {
     await substituirTitulars(client, propietat.id, input.titulars);
   }
+  await assegurarUnitatUnica(client, propietat);
 
   return propietat;
+}
+
+/**
+ * Una propietat que es lloga sencera (pis, casa, parking...) té una sola unitat, que es
+ * crea aquí amb la referència i la superfície de la propietat perquè el gestor no l'hagi
+ * de donar d'alta a mà. No fa res si ja en té alguna o si és un edifici.
+ */
+export async function assegurarUnitatUnica(
+  client: PoolClient,
+  propietat: Pick<Propietat, 'id' | 'tipus' | 'referencia' | 'superficie' | 'planta'>
+): Promise<void> {
+  if (!teUnitatUnica(propietat.tipus)) return;
+  await client.query(
+    `INSERT INTO unitats (propietat_id, referencia, planta, superficie)
+     SELECT $1, $2, $3, $4
+      WHERE NOT EXISTS (SELECT 1 FROM unitats WHERE propietat_id = $1 AND deleted_at IS NULL)`,
+    [propietat.id, propietat.referencia, propietat.planta, propietat.superficie]
+  );
 }
 
 export async function actualitzarPropietat(
@@ -221,6 +241,10 @@ export async function actualitzarPropietat(
 
   if (propietat && input.titulars !== undefined) {
     await substituirTitulars(client, id, input.titulars);
+  }
+  // Si passa d'edifici a un tipus que es lloga sencer i no té cap unitat, se li crea.
+  if (propietat && input.tipus !== undefined) {
+    await assegurarUnitatUnica(client, propietat);
   }
 
   return propietat;

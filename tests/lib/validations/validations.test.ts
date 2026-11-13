@@ -9,6 +9,7 @@ import { crearPagamentSchema, crearRemesaSchema } from '@/lib/validations/pagame
 import { actualitzarPersonaSchema, crearPropietariSchema } from '@/lib/validations/persones';
 import {
   actualitzarPropietatSchema,
+  teUnitatUnica,
   crearPropietatSchema,
   titularSchema,
 } from '@/lib/validations/propietats';
@@ -154,6 +155,12 @@ describe('propietats', () => {
       ascensor: false,
     });
     expect(parsed).not.toHaveProperty('superficie');
+  });
+
+  it('només els edificis poden tenir diverses unitats', () => {
+    expect(teUnitatUnica('pis')).toBe(true);
+    expect(teUnitatUnica('parking')).toBe(true);
+    expect(teUnitatUnica('edifici')).toBe(false);
   });
 
   it('limita el percentatge de titularitat a (0, 100]', () => {

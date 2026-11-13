@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiFetch } from '@/hooks/api-client';
@@ -28,6 +29,12 @@ export function UnitatPicker({ propietatId, onPropietatChange, unitatId, onUnita
     queryFn: () => apiFetch<UnitatOpcio[]>(`/api/propietats/${propietatId}/unitats`).then((res) => res.data),
     enabled: !!propietatId,
   });
+
+  // Una propietat amb una sola unitat (pis, casa...) no obliga a triar-la.
+  const unica = unitats?.length === 1 ? unitats[0].id : undefined;
+  React.useEffect(() => {
+    if (unica && !unitatId) onUnitatChange(unica);
+  }, [unica, unitatId, onUnitatChange]);
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -347,6 +347,12 @@ function UnitatStep({ propietatId, setPropietatId, unitatId, setUnitatId }: Unit
   const { data: unitats, isLoading: unitatsLoading } = useUnitatsPropietat(propietatId);
   const unitatsVacants = (unitats ?? []).filter((u) => u.estat === 'vacant');
 
+  // Una propietat amb una sola unitat (pis, casa...) no obliga a triar-la.
+  const unicaVacant = unitats?.length === 1 && unitatsVacants.length === 1 ? unitatsVacants[0].id : undefined;
+  React.useEffect(() => {
+    if (unicaVacant && !unitatId) setUnitatId(unicaVacant);
+  }, [unicaVacant, unitatId, setUnitatId]);
+
   return (
     <div className="flex flex-col gap-4">
       <FormField label="Propietat" required>

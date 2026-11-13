@@ -24,11 +24,11 @@ import {
   actualitzarPropietat,
   actualitzarUnitat,
   crearPropietat,
-  crearUnitat,
   donarBaixaPropietat,
   donarBaixaUnitat,
   llistarPropietats,
   obtenirPropietat,
+  llistarUnitats,
   obtenirUnitat,
 } from '@/lib/db/propietats';
 import { provisionarTenant } from '@/lib/db/tenants';
@@ -88,7 +88,11 @@ describe.skipIf(!adminUrl)('camps opcionals i casos límit', () => {
       )
     );
     propietatId = propietat.id;
-    unitatId = (await amb((c) => crearUnitat(c, propietatId, { referencia: 'U', planta: '1', porta: 'A', superficie: 50, rendaBase: 500 }))).id;
+    // Una casa ja té la seva única unitat, creada en donar-la d'alta.
+    unitatId = (await amb((c) => llistarUnitats(c, propietatId)))[0].id;
+    await amb((c) =>
+      actualitzarUnitat(c, unitatId, propietatId, { referencia: 'U', planta: '1', porta: 'A', superficie: 50, rendaBase: 500 })
+    );
     inquiliId = (await amb((c) => crearPersona(c, 'inquili', { nom: 'Ivet', cognoms: 'Roca', email: 'i@x.cat', telefon: '6', adreca: 'B', notes: 'n' }))).id;
 
     contracteId = (
