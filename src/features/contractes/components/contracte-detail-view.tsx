@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 
-import { useContracte, useUpdateContracte, useResoldreContracte } from '@/hooks/use-contractes';
+import { useContracte, useUpdateContracte, useResoldreContracte, type Contracte } from '@/hooks/use-contractes';
 import { useListPagaments, type Pagament } from '@/hooks/use-pagaments';
 import { ApiFetchError } from '@/hooks/api-client';
 import {
@@ -28,7 +28,11 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { TIPUS_US_OPTIONS } from '@/features/contractes/types';
+import { TIPUS_ACTUALITZACIO_OPTIONS, TIPUS_US_OPTIONS, textDurada } from '@/features/contractes/types';
+import { properVenciment } from '@/lib/validations/contractes';
+import { PactesFields, pactesInput, valorsPactes, type PactesValues } from './pactes-fields';
+import { ConceptesSection } from './conceptes-section';
+import { GarantiesSection } from './garanties-section';
 import { DocumentsSection } from '@/features/documents/components/documents-section';
 
 interface ContracteDetailViewProps {
@@ -44,6 +48,7 @@ export function ContracteDetailView({ id, canWrite }: ContracteDetailViewProps) 
 
   const [renovarOpen, setRenovarOpen] = React.useState(false);
   const [resoldreOpen, setResoldreOpen] = React.useState(false);
+  const [pactesOpen, setPactesOpen] = React.useState(false);
 
   if (isLoading) {
     return <LoadingSkeleton variant="detail" sections={2} />;
@@ -82,10 +87,24 @@ export function ContracteDetailView({ id, canWrite }: ContracteDetailViewProps) 
           <Field label="Tipus d'ús" value={TIPUS_US_OPTIONS.find((o) => o.value === contracte.tipusUs)?.label ?? contracte.tipusUs} />
           <Field label="Data inici" value={contracte.dataInici} />
           <Field label="Data fi" value={contracte.dataFi ?? '—'} />
-          <Field label="Renda" value={`${contracte.renda} €`} />
+          <Field
+            label="Renda vigent"
+            value={
+              contracte.renda === contracte.rendaInicial
+                ? `${contracte.renda} €`
+                : `${contracte.renda} € (inicial: ${contracte.rendaInicial} €)`
+            }
+          />
           <Field label="Fiança" value={`${contracte.fianca} €`} />
-          <Field label="Índex d'actualització" value={contracte.indexActualitzacio} />
-          <Field label="Percentatge pactat" value={contracte.percentatgePactat ? `${contracte.percentatgePactat} %` : '—'} />
+          <Field label="Actualització anual" value={textActualitzacio(contracte)} />
+          <Field label="Durada inicial" value={contracte.duradaMesos ? textDurada(contracte.duradaMesos) : '—'} />
+          <Field label="Pròrroga" value={textProrroga(contracte)} />
+          <Field
+            label="Venciment del període actual"
+            value={properVenciment(contracte, new Date().toLocaleDateString('en-CA')) ?? '—'}
+          />
+          <Field label="Preavís per no renovar" value={contracte.preavisDies !== null ? `${contracte.preavisDies} dies` : '—'} />
+          <Field label="Moblat" value={contracte.moblat ? 'Sí' : 'No'} />
           {contracte.estat === 'resolt' && (
             <>
               <Field label="Motiu de resolució" value={contracte.motiuResolucio ?? '—'} />
@@ -95,10 +114,15 @@ export function ContracteDetailView({ id, canWrite }: ContracteDetailViewProps) 
         </CardContent>
       </Card>
 
+      <ConceptesSection contracteId={id} canWrite={canWrite} dataInici={contracte.dataInici} />
+      <GarantiesSection contracteId={id} canWrite={canWrite} />
       <DocumentsSection entitat="contracte" entitatId={id} canWrite={canWrite} />
 
       {canWrite && (
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setPactesOpen(true)}>
+            Editar pactes
+          </Button>
           {contracte.estat === 'esborrany' && (
             <Button loading={updateContracte.isPending} onClick={handleActivar}>
               Activar
@@ -135,7 +159,73 @@ export function ContracteDetailView({ id, canWrite }: ContracteDetailViewProps) 
 
       <RenovarDialog contracteId={id} open={renovarOpen} onOpenChange={setRenovarOpen} dataFiActual={contracte.dataFi} />
       <ResoldreDialog contracteId={id} open={resoldreOpen} onOpenChange={setResoldreOpen} />
+      {pactesOpen && <EditarPactesDialog contracte={contracte} onClose={() => setPactesOpen(false)} />}
     </div>
+  );
+}
+
+function textActualitzacio(contracte: Contracte): string {
+  const label = TIPUS_ACTUALITZACIO_OPTIONS.find((o) => o.value === contracte.tipusActualitzacio)?.label ?? '—';
+  return contracte.tipusActualitzacio === 'percentatge_fix' && contracte.percentatgePactat
+    ? `${label}: ${contracte.percentatgePactat} %`
+    : label;
+}
+
+function textProrroga(contracte: Contracte): string {
+  if (!contracte.prorrogaAutomatica) return 'No automàtica';
+  const cada = contracte.prorrogaMesos ? `cada ${textDurada(contracte.prorrogaMesos)}` : '';
+  const fins = contracte.duradaMaximaMesos ? `, fins a ${textDurada(contracte.duradaMaximaMesos)} en total` : '';
+  return `Automàtica ${cada}${fins}`.trim();
+}
+
+function EditarPactesDialog({ contracte, onClose }: { contracte: Contracte; onClose: () => void }) {
+  const updateContracte = useUpdateContracte(contracte.id);
+  const [values, setValues] = React.useState<PactesValues>(() => valorsPactes(contracte));
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [error, setError] = React.useState<string | undefined>(undefined);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(undefined);
+    setErrors({});
+    try {
+      await updateContracte.mutateAsync(pactesInput(values, true));
+      toast({ title: 'Pactes desats' });
+      onClose();
+    } catch (err) {
+      if (err instanceof ApiFetchError) setErrors(err.fields ?? {});
+      setError(err instanceof ApiFetchError ? err.message : "S'ha produït un error inesperat.");
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+          <DialogHeader>
+            <DialogTitle>Editar pactes</DialogTitle>
+            <DialogDescription>
+              Durada, pròrrogues, actualització i mobles. Els imports es canvien a Renda i despeses, amb data
+              d&apos;efecte.
+            </DialogDescription>
+          </DialogHeader>
+          {error && (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {error}
+            </p>
+          )}
+          <PactesFields values={values} onChange={setValues} errors={errors} />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel·lar
+            </Button>
+            <Button type="submit" loading={updateContracte.isPending}>
+              Desar
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

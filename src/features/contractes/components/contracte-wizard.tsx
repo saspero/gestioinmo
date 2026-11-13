@@ -21,7 +21,8 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
-import { TIPUS_US_OPTIONS, type UnitatDisponible } from '@/features/contractes/types';
+import { TIPUS_US_OPTIONS, TIPUS_ACTUALITZACIO_OPTIONS, type UnitatDisponible } from '@/features/contractes/types';
+import { PACTES_INICIALS, PactesFields, pactesInput, type PactesValues } from './pactes-fields';
 
 interface ContracteWizardProps {
   unitatIdInicial?: string;
@@ -56,8 +57,7 @@ export function ContracteWizard({ unitatIdInicial, propietatIdInicial }: Contrac
   const [fianca, setFianca] = React.useState('');
   // Mentre l'usuari no pacti un altre import, la fiança segueix la renda (regla #4).
   const [fiancaPactada, setFiancaPactada] = React.useState(false);
-  const [indexActualitzacio, setIndexActualitzacio] = React.useState('IPC');
-  const [percentatgePactat, setPercentatgePactat] = React.useState('');
+  const [pactes, setPactes] = React.useState<PactesValues>(PACTES_INICIALS);
   const [documentUrl, setDocumentUrl] = React.useState('');
 
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
@@ -75,7 +75,10 @@ export function ContracteWizard({ unitatIdInicial, propietatIdInicial }: Contrac
   function canAdvanceFrom(current: Step): boolean {
     if (current === 1) return Boolean(unitatId);
     if (current === 2) return inquilinsSeleccionats.length > 0;
-    if (current === 3) return Boolean(dataInici) && rendaNum > 0 && fianca !== '';
+    if (current === 3) {
+      const percentatgeOk = pactes.tipusActualitzacio !== 'percentatge_fix' || pactes.percentatgePactat !== '';
+      return Boolean(dataInici) && rendaNum > 0 && fianca !== '' && percentatgeOk;
+    }
     return true;
   }
 
@@ -91,8 +94,7 @@ export function ContracteWizard({ unitatIdInicial, propietatIdInicial }: Contrac
       dataFi: dataFi || undefined,
       renda: rendaNum,
       fianca: Number(fianca),
-      indexActualitzacio,
-      percentatgePactat: percentatgePactat ? Number(percentatgePactat) : undefined,
+      ...pactesInput(pactes, false),
       documentUrl: documentUrl || undefined,
       inquilinsIds: inquilinsSeleccionats.map((i) => i.id),
     };
@@ -229,7 +231,11 @@ export function ContracteWizard({ unitatIdInicial, propietatIdInicial }: Contrac
             <FormField label="Data d'inici" required error={fieldErrors.dataInici}>
               <Input type="date" value={dataInici} onChange={(event) => setDataInici(event.target.value)} required />
             </FormField>
-            <FormField label="Data de fi" description="Opcional" error={fieldErrors.dataFi}>
+            <FormField
+              label="Data de fi"
+              description="Opcional. Amb una durada inicial, es calcula sola."
+              error={fieldErrors.dataFi}
+            >
               <Input type="date" value={dataFi} onChange={(event) => setDataFi(event.target.value)} />
             </FormField>
           </div>
@@ -267,20 +273,12 @@ export function ContracteWizard({ unitatIdInicial, propietatIdInicial }: Contrac
             />
           </FormField>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField label="Índex d'actualització" error={fieldErrors.indexActualitzacio}>
-              <Input value={indexActualitzacio} onChange={(event) => setIndexActualitzacio(event.target.value)} />
-            </FormField>
-            <FormField label="Percentatge pactat (%)" description="Opcional" error={fieldErrors.percentatgePactat}>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={percentatgePactat}
-                onChange={(event) => setPercentatgePactat(event.target.value)}
-              />
-            </FormField>
-          </div>
+          <PactesFields values={pactes} onChange={setPactes} errors={fieldErrors} />
+
+          <p className="text-sm text-muted-foreground">
+            Les despeses repercutides (escombraries, comunitat...) i les garanties s&apos;afegeixen després, des de la
+            fitxa del contracte.
+          </p>
 
           <FormField label="URL del document" description="Opcional" error={fieldErrors.documentUrl}>
             <Input value={documentUrl} onChange={(event) => setDocumentUrl(event.target.value)} />
@@ -298,6 +296,8 @@ export function ContracteWizard({ unitatIdInicial, propietatIdInicial }: Contrac
           dataFi={dataFi}
           renda={renda}
           fianca={fianca}
+          actualitzacio={TIPUS_ACTUALITZACIO_OPTIONS.find((o) => o.value === pactes.tipusActualitzacio)?.label ?? ''}
+          moblat={pactes.moblat}
         />
       )}
 
@@ -488,6 +488,8 @@ interface ConfirmacioStepProps {
   dataFi: string;
   renda: string;
   fianca: string;
+  actualitzacio: string;
+  moblat: boolean;
 }
 
 function ConfirmacioStep({
@@ -499,6 +501,8 @@ function ConfirmacioStep({
   dataFi,
   renda,
   fianca,
+  actualitzacio,
+  moblat,
 }: ConfirmacioStepProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -513,6 +517,8 @@ function ConfirmacioStep({
         <SummaryItem label="Data fi" value={dataFi || '—'} />
         <SummaryItem label="Renda" value={`${renda} €`} />
         <SummaryItem label="Fiança" value={`${fianca} €`} />
+        <SummaryItem label="Actualització" value={actualitzacio} />
+        <SummaryItem label="Moblat" value={moblat ? 'Sí' : 'No'} />
       </dl>
 
       {!unitatEncaraVacant && (

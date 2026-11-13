@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { RENDA_VIGENT } from './contractes';
 import type { DashboardQuery, RecursExport } from '../validations/informes';
 
 export interface DashboardIndicadors {
@@ -133,7 +134,7 @@ export async function obtenirDadesExportacio(client: PoolClient, recurs: RecursE
     case 'contractes': {
       const { rows } = await client.query(
         `SELECT id, unitat_id AS "unitatId", tipus_us AS "tipusUs", data_inici AS "dataInici",
-                data_fi AS "dataFi", renda, fianca, estat
+                data_fi AS "dataFi", ${RENDA_VIGENT} AS renda, fianca, estat
            FROM contractes WHERE deleted_at IS NULL ORDER BY data_inici DESC LIMIT $1`,
         [EXPORT_ROW_LIMIT]
       );
