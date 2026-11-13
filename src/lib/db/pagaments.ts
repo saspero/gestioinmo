@@ -6,8 +6,10 @@ import type {
   ActualitzarPagament,
   CobrarPagament,
   CrearRemesa,
+  GenerarRebuts,
   LlistarPagamentsQuery,
 } from '../validations/pagaments';
+import { concepteRebut } from '../validations/pagaments';
 
 export interface Pagament {
   id: string;
@@ -19,14 +21,24 @@ export interface Pagament {
   dataCobrament: string | null;
   metode: string | null;
   estat: string;
+  /** Mes (YYYY-MM) d'un rebut generat; null si es va crear a mà. */
+  periode: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
+export interface LiniaPagament {
+  id: string;
+  concepteId: string | null;
+  tipus: string;
+  descripcio: string;
+  import: string;
+}
+
 const PAGAMENT_COLUMNS = `
   id, contracte_id AS "contracteId", remesa_id AS "remesaId", concepte, import,
-  data_venciment AS "dataVenciment", data_cobrament AS "dataCobrament", metode, estat,
-  created_at AS "createdAt", updated_at AS "updatedAt"
+  data_venciment::text AS "dataVenciment", data_cobrament::text AS "dataCobrament", metode, estat,
+  to_char(periode, 'YYYY-MM') AS periode, created_at AS "createdAt", updated_at AS "updatedAt"
 `;
 
 const PAGAMENTS_SORT_COLUMNS = ['data_venciment', 'import', 'estat', 'created_at'] as const;
@@ -133,6 +145,149 @@ export async function anularPagament(client: PoolClient, id: string): Promise<bo
     [id]
   );
   return (rowCount ?? 0) > 0;
+}
+
+// --- Rebuts mensuals amb línies ---
+
+const NOM_TIPUS_CONCEPTE: Record<string, string> = {
+  renda: 'Renda',
+  escombraries: "Taxa d'escombraries",
+  comunitat: 'Comunitat',
+  ibi: 'IBI',
+  subministraments: 'Subministraments',
+  altres: 'Altres',
+};
+
+interface ConcepteDelMes {
+  contracteId: string;
+  ref: string;
+  teRebut: boolean;
+  concepteId: string | null;
+  tipus: string | null;
+  descripcio: string | null;
+  periodicitat: string | null;
+  mesCobrament: number | null;
+  import: string | null;
+}
+
+function descripcioLinia(concepte: ConcepteDelMes): string {
+  const tipus = concepte.tipus ?? 'altres';
+  const base =
+    tipus === 'altres'
+      ? concepte.descripcio || 'Altres'
+      : concepte.descripcio
+        ? `${NOM_TIPUS_CONCEPTE[tipus]} (${concepte.descripcio})`
+        : NOM_TIPUS_CONCEPTE[tipus];
+  if (concepte.periodicitat !== 'anual') return base;
+  return concepte.mesCobrament === null ? `${base}, part mensual (1/12)` : `${base}, anual`;
+}
+
+export interface ResultatGenerarRebuts {
+  periode: string;
+  creats: number;
+  jaExistien: number;
+}
+
+/**
+ * Genera el rebut del mes de cada contracte actiu que encara no en té. Cada rebut porta
+ * una línia per la renda i per cada despesa repercutida, amb l'import vigent el dia 1
+ * del mes (o el dia d'inici, el primer mes del contracte). Una despesa anual es cobra
+ * sencera el seu mes, o una dotzena part cada mes si no en té. Es pot tornar a executar:
+ * els contractes que ja tenen el rebut del mes se salten.
+ */
+export async function generarRebuts(client: PoolClient, input: GenerarRebuts): Promise<ResultatGenerarRebuts> {
+  const inici = `${input.periode}-01`;
+  const { rows } = await client.query<ConcepteDelMes>(
+    `WITH mes AS (
+       SELECT $1::date AS inici, ($1::date + interval '1 month')::date - 1 AS fi
+     ),
+     contractes_mes AS (
+       SELECT c.id, greatest(mes.inici, c.data_inici) AS ref,
+              EXISTS (
+                SELECT 1 FROM pagaments p
+                 WHERE p.contracte_id = c.id AND p.periode = mes.inici AND p.deleted_at IS NULL
+              ) AS te_rebut
+         FROM contractes c CROSS JOIN mes
+        WHERE c.estat = 'actiu' AND c.deleted_at IS NULL AND c.data_inici <= mes.fi
+     )
+     SELECT cm.id AS "contracteId", cm.ref::text AS ref, cm.te_rebut AS "teRebut",
+            cc.id AS "concepteId", cc.tipus, cc.descripcio, cc.periodicitat,
+            cc.mes_cobrament AS "mesCobrament",
+            (CASE WHEN cc.periodicitat = 'anual' AND cc.mes_cobrament IS NULL
+                  THEN round(cc.import / 12, 2) ELSE cc.import END)::text AS import
+       FROM contractes_mes cm
+       CROSS JOIN mes
+       LEFT JOIN contracte_conceptes cc
+         ON cc.contracte_id = cm.id
+        AND cc.vigent_des_de <= cm.ref
+        AND (cc.vigent_fins IS NULL OR cc.vigent_fins >= cm.ref)
+        AND (cc.periodicitat = 'mensual' OR cc.mes_cobrament IS NULL
+             OR cc.mes_cobrament = extract(month FROM mes.inici))
+      ORDER BY cm.id, (cc.tipus = 'renda') DESC, cc.created_at`,
+    [inici]
+  );
+
+  const perContracte = new Map<string, ConcepteDelMes[]>();
+  for (const row of rows) {
+    const llista = perContracte.get(row.contracteId) ?? [];
+    llista.push(row);
+    perContracte.set(row.contracteId, llista);
+  }
+
+  const concepte = concepteRebut(input.periode);
+  let creats = 0;
+  let jaExistien = 0;
+
+  for (const [contracteId, conceptes] of perContracte) {
+    if (conceptes[0].teRebut) {
+      jaExistien += 1;
+      continue;
+    }
+    const linies = conceptes.filter((c) => c.concepteId !== null && Number(c.import) > 0);
+    if (linies.length === 0) continue;
+
+    // En cèntims per no arrossegar errors de coma flotant.
+    const totalCentims = linies.reduce((suma, l) => suma + Math.round(Number(l.import) * 100), 0);
+
+    const { rows: inserits } = await client.query<{ id: string }>(
+      `INSERT INTO pagaments (contracte_id, concepte, import, data_venciment, periode)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (contracte_id, periode) WHERE periode IS NOT NULL AND deleted_at IS NULL DO NOTHING
+       RETURNING id`,
+      [contracteId, concepte, (totalCentims / 100).toFixed(2), conceptes[0].ref, inici]
+    );
+    if (inserits.length === 0) {
+      jaExistien += 1;
+      continue;
+    }
+
+    await client.query(
+      `INSERT INTO pagament_linies (pagament_id, concepte_id, tipus, descripcio, import, ordre)
+       SELECT $1, l.concepte_id, l.tipus, l.descripcio, l.import, l.ordre
+         FROM unnest($2::uuid[], $3::tipus_concepte[], $4::text[], $5::numeric[], $6::int[])
+           AS l(concepte_id, tipus, descripcio, import, ordre)`,
+      [
+        inserits[0].id,
+        linies.map((l) => l.concepteId),
+        linies.map((l) => l.tipus),
+        linies.map(descripcioLinia),
+        linies.map((l) => l.import),
+        linies.map((_l, index) => index),
+      ]
+    );
+    creats += 1;
+  }
+
+  return { periode: input.periode, creats, jaExistien };
+}
+
+export async function llistarLiniesPagament(client: PoolClient, pagamentId: string): Promise<LiniaPagament[]> {
+  const { rows } = await client.query<LiniaPagament>(
+    `SELECT id, concepte_id AS "concepteId", tipus, descripcio, import
+       FROM pagament_linies WHERE pagament_id = $1 ORDER BY ordre, created_at`,
+    [pagamentId]
+  );
+  return rows;
 }
 
 // --- Remeses ---

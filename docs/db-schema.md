@@ -348,6 +348,14 @@ inquilí (ex: parella, companys de pis).
 | metode | ENUM `metode_pagament` | `domiciliacio`, `transferencia`, `efectiu`, `targeta`, `altres` |
 | estat | ENUM `estat_pagament` | `pendent`, `remesa`, `cobrat`, `vencut`, `mora`, `regularitzat` |
 | created_at / updated_at / deleted_at | TIMESTAMPTZ | Mai `DELETE` físic d'un rebut cobrat; s'anul·la (soft delete) amb rastre d'auditoria |
+| periode | DATE | `022_rebuts_linies.sql`. Primer dia del mes d'un rebut generat; nul si es va crear a mà. Únic per `(contracte_id, periode)` entre els no anul·lats |
+
+**`pagament_linies`** (`022_rebuts_linies.sql`): el detall d'un rebut generat. Una línia per
+la renda i per cada despesa de `contracte_conceptes` vigent el dia 1 del mes (o el dia
+d'inici, el primer mes). Una despesa anual amb `mes_cobrament` es cobra sencera aquell mes;
+sense, una dotzena part cada mes. `pagaments.import` és la suma de les línies. Camps:
+`pagament_id` (`ON DELETE CASCADE`), `concepte_id` (`ON DELETE SET NULL`), `tipus`,
+`descripcio`, `import` (`> 0`), `ordre`. Ho genera `generarRebuts` (`src/lib/db/pagaments.ts`).
 
 ### 3.12 `liquidacions` — 006_pagaments.sql (schema de tenant)
 

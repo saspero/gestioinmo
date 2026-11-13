@@ -6,6 +6,7 @@ import { Forbidden } from '@/app/(dashboard)/_lib/forbidden';
 import { PageHeader } from '@/components/shared';
 import { buttonVariants } from '@/components/ui/button';
 import { PagamentsListView } from '@/features/pagaments/components/pagaments-list-view';
+import { GenerarRebutsButton } from '@/features/pagaments/components/generar-rebuts-button';
 
 export const metadata: Metadata = { title: 'Pagaments · Gestinmo' };
 
@@ -14,10 +15,11 @@ interface PagamentsPageProps {
 }
 
 export default async function PagamentsPage({ searchParams }: PagamentsPageProps) {
-  const { allowed } = await getModuleAccess('pagaments', 'lectura');
+  const { payload, allowed } = await getModuleAccess('pagaments', 'lectura');
   if (!allowed) return <Forbidden />;
 
   const { estat } = await searchParams;
+  const canWrite = payload.rol === 'admin' || payload.rol === 'gestor' || payload.rol === 'comptable';
 
   return (
     <div className="flex flex-col gap-6">
@@ -25,9 +27,12 @@ export default async function PagamentsPage({ searchParams }: PagamentsPageProps
         title="Pagaments"
         breadcrumbs={[{ label: 'Pagaments' }]}
         actions={
-          <Link href="/pagaments/remeses" className={buttonVariants({ variant: 'outline' })}>
-            Remeses
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/pagaments/remeses" className={buttonVariants({ variant: 'outline' })}>
+              Remeses
+            </Link>
+            {canWrite && <GenerarRebutsButton />}
+          </div>
         }
       />
       <PagamentsListView estatInicial={estat} />

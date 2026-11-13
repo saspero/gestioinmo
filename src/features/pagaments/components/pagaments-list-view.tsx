@@ -82,7 +82,7 @@ export function PagamentsListView({ estatInicial }: PagamentsListViewProps) {
           onPageChange: setPage,
         }}
         emptyTitle="Encara no hi ha cap rebut."
-        emptyDescription="Els rebuts es generen automàticament a partir dels contractes actius."
+        emptyDescription="Genera els rebuts del mes amb el botó «Generar rebuts del mes»."
         toolbar={
           <Select
             value={estat}

@@ -6,7 +6,7 @@ import { apiError, apiSuccess } from '../../../../lib/errors';
 import { withTenantContext } from '../../../../lib/auth/tenant-context';
 import { uuidSchema, zodFieldErrors } from '../../../../lib/validations/common';
 import { actualitzarPagamentSchema } from '../../../../lib/validations/pagaments';
-import { obtenirPagament, actualitzarPagament, anularPagament } from '../../../../lib/db/pagaments';
+import { obtenirPagament, actualitzarPagament, anularPagament, llistarLiniesPagament } from '../../../../lib/db/pagaments';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -20,7 +20,10 @@ export async function GET(request: NextRequest, { params }: RouteParams): Promis
     const { id } = await params;
     if (!uuidSchema.safeParse(id).success) return apiError('NOT_FOUND', 'Rebut no trobat.');
 
-    const pagament = await withTenantContext(auth.payload, (client) => obtenirPagament(client, id));
+    const pagament = await withTenantContext(auth.payload, async (client) => {
+      const trobat = await obtenirPagament(client, id);
+      return trobat ? { ...trobat, linies: await llistarLiniesPagament(client, id) } : null;
+    });
     if (!pagament) return apiError('NOT_FOUND', 'Rebut no trobat.');
     return apiSuccess(pagament);
   });
