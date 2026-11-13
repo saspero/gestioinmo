@@ -294,6 +294,31 @@ Un *constraint trigger* diferit (`trg_check_percentatge_titularitat`) valida en 
 Els propietaris d'un contracte **no** es guarden de forma redundant: es deriven
 transitivament `unitat → propietat → propietat_propietaris`.
 
+### 3.8b Pactes, conceptes i garanties — 021_contractes_pactes.sql (schema de tenant)
+
+**Pactes a `contractes`** (es corregeixen sense historial):
+
+| Camp | Tipus | Notes |
+|---|---|---|
+| tipus_actualitzacio | ENUM `tipus_actualitzacio` | `ipc`, `irav`, `percentatge_fix`, `cap`. Substitueix `index_actualitzacio` (text), que es conserva |
+| durada_mesos | INTEGER | Durada inicial. A l'alta, si no hi ha `data_fi`, la fi es calcula (últim dia del període) |
+| prorroga_automatica / prorroga_mesos / durada_maxima_mesos | BOOLEAN / INTEGER / INTEGER | Pròrrogues tàcites i fins a quina durada total |
+| preavis_dies | INTEGER | Preavís per no renovar |
+| moblat | BOOLEAN | L'inventari s'adjunta com a document |
+
+**`contracte_conceptes`**: el que paga l'inquilí, amb historial. Cada fila és un import
+vigent entre `vigent_des_de` i `vigent_fins` (inclosos). Un canvi tanca la fila anterior
+el dia abans de la data d'efecte i n'obre una de nova amb `substitueix_id`; només es pot
+canviar la fila més recent. `tipus` (`renda`, `escombraries`, `comunitat`, `ibi`,
+`subministraments`, `altres`), `periodicitat` (`mensual` o `anual`; una anual es cobra el
+`mes_cobrament` o repartida en dotze mesos si és nul). Tot contracte té una fila `renda`
+des de l'alta. `contractes.renda` és la renda inicial; la vigent la calcula `RENDA_VIGENT`
+(`src/lib/db/contractes.ts`).
+
+**`contracte_garanties`**: garanties addicionals a la fiança (`aval_bancari`,
+`diposit_addicional`, `asseguranca_impagament`, `altres`), amb import, entitat i venciment
+opcionals.
+
 ### 3.9 `contracte_inquilins` — 005_contractes.sql (schema de tenant)
 
 N:N entre `contractes` i `persones` (tipus `inquili`) — un contracte pot tenir més d'un

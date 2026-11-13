@@ -8,9 +8,16 @@ import type { PoolClient } from 'pg';
 import { withTenantContext } from '@/lib/auth/tenant-context';
 import {
   actualitzarContracte,
+  crearConcepte,
   crearContracte,
+  crearGarantia,
+  donarBaixaConcepte,
   donarBaixaContracte,
+  esborrarGarantia,
+  llistarConceptes,
   llistarContractes,
+  llistarGaranties,
+  modificarConcepte,
   llistarInquilinsContracte,
   obtenirContracte,
   resoldreContracte,
@@ -172,13 +179,15 @@ describe.skipIf(!adminUrl)('fluxos de negoci amb PostgreSQL real', () => {
       expect(data).toHaveLength(1);
       const id = data[0].id;
 
-      const canviat = await amb((c) => actualitzarContracte(c, id, { renda: 790 }));
-      expect(Number(canviat?.renda)).toBe(790);
+      // Un contracte actiu canvia la renda amb data d'efecte, no directament.
+      await expect(amb((c) => actualitzarContracte(c, id, { renda: 790 }))).rejects.toThrow('data d\'efecte');
 
       // Regla #4: la fiança no segueix la renda, així que una pujada d'IPC no la toca.
-      const pujat = await amb((c) => actualitzarContracte(c, id, { renda: 2000 }));
+      const [renda] = await amb((c) => llistarConceptes(c, id));
+      await amb((c) => modificarConcepte(c, id, renda.id, { import: 2000, dataEfecte: '2026-01-02' }));
+      const pujat = await amb((c) => obtenirContracte(c, id));
       expect(Number(pujat?.renda)).toBe(2000);
-      expect(Number(pujat?.fianca)).toBe(Number(canviat?.fianca));
+      expect(Number(pujat?.fianca)).toBe(800);
 
       const resolt = await amb((c) =>
         resoldreContracte(c, id, { motiuResolucio: 'Mutu acord', dataResolucio: '2026-06-30' })
@@ -191,6 +200,119 @@ describe.skipIf(!adminUrl)('fluxos de negoci amb PostgreSQL real', () => {
       const esborrany = await nouContracte(unitat2);
       expect(await amb((c) => donarBaixaContracte(c, esborrany.id))).toBe(true);
       expect(await amb((c) => obtenirContracte(c, esborrany.id))).toBeNull();
+    });
+  });
+
+  describe('pactes del contracte', () => {
+    let contracteId: string;
+    const avui = new Date().toISOString().slice(0, 10);
+
+    beforeAll(async () => {
+      const pis = await amb((c) =>
+        crearPropietat(c, crearPropietatSchema.parse({ referencia: 'PACTES-1', tipus: 'pis', adreca: 'Nou 1' }))
+      );
+      const [unitat] = await amb((c) => llistarUnitats(c, pis.id));
+      const contracte = await amb((c) =>
+        crearContracte(
+          c,
+          crearContracteSchema.parse({
+            unitatId: unitat.id,
+            dataInici: '2025-03-01',
+            renda: 700,
+            inquilinsIds: [inquiliId],
+            duradaMesos: 60,
+            prorrogaAutomatica: true,
+            prorrogaMesos: 12,
+            duradaMaximaMesos: 96,
+            preavisDies: 30,
+            tipusActualitzacio: 'percentatge_fix',
+            percentatgePactat: 2,
+            moblat: true,
+          })
+        )
+      );
+      contracteId = contracte.id;
+    });
+
+    it('desa els pactes, calcula la fi de la durada inicial i crea la renda inicial', async () => {
+      const contracte = await amb((c) => obtenirContracte(c, contracteId));
+      expect(contracte).toMatchObject({
+        dataFi: '2030-02-28',
+        duradaMesos: 60,
+        prorrogaAutomatica: true,
+        tipusActualitzacio: 'percentatge_fix',
+        moblat: true,
+      });
+      expect(Number(contracte!.renda)).toBe(700);
+      const conceptes = await amb((c) => llistarConceptes(c, contracteId));
+      expect(conceptes).toMatchObject([{ tipus: 'renda', vigentDesDe: '2025-03-01', vigentFins: null }]);
+    });
+
+    it('canvia la renda amb data d\'efecte i en conserva l\'historial', async () => {
+      const [renda] = await amb((c) => llistarConceptes(c, contracteId));
+      await expect(
+        amb((c) => modificarConcepte(c, contracteId, renda.id, { import: 750, dataEfecte: '2025-03-01' }))
+      ).rejects.toThrow('posterior');
+
+      const nova = await amb((c) =>
+        modificarConcepte(c, contracteId, renda.id, { import: 714, dataEfecte: '2026-03-01', motiu: 'Actualització 2 %' })
+      );
+      expect(nova).toMatchObject({ tipus: 'renda', vigentDesDe: '2026-03-01', substitueixId: renda.id });
+      expect(Number((await amb((c) => obtenirContracte(c, contracteId)))!.renda)).toBe(714);
+      expect(Number((await amb((c) => obtenirContracte(c, contracteId)))!.rendaInicial)).toBe(700);
+
+      // La fila substituïda ja no es pot tornar a modificar.
+      await expect(
+        amb((c) => modificarConcepte(c, contracteId, renda.id, { import: 720, dataEfecte: '2026-06-01' }))
+      ).rejects.toThrow('substituït');
+
+      // Un canvi futur no afecta la renda vigent d'avui.
+      await amb((c) => modificarConcepte(c, contracteId, nova!.id, { import: 999, dataEfecte: '2099-01-01' }));
+      expect(Number((await amb((c) => obtenirContracte(c, contracteId)))!.renda)).toBe(714);
+    });
+
+    it('afegeix i dona de baixa despeses repercutides', async () => {
+      const escombraries = await amb((c) =>
+        crearConcepte(c, contracteId, {
+          tipus: 'escombraries',
+          import: 120,
+          periodicitat: 'anual',
+          mesCobrament: 6,
+          vigentDesDe: '2025-03-01',
+        })
+      );
+      const baixa = await amb((c) => donarBaixaConcepte(c, contracteId, escombraries.id, { dataEfecte: avui }));
+      expect(baixa?.vigentFins).not.toBeNull();
+
+      // Una despesa que encara no havia començat s'esborra.
+      const futura = await amb((c) =>
+        crearConcepte(c, contracteId, { tipus: 'comunitat', import: 40, periodicitat: 'mensual', vigentDesDe: '2099-01-01' })
+      );
+      await amb((c) => donarBaixaConcepte(c, contracteId, futura.id, { dataEfecte: '2098-01-01' }));
+      const tipus = (await amb((c) => llistarConceptes(c, contracteId))).map((cc) => cc.tipus);
+      expect(tipus).not.toContain('comunitat');
+
+      const [renda] = await amb((c) => llistarConceptes(c, contracteId));
+      await expect(amb((c) => donarBaixaConcepte(c, contracteId, renda.id, { dataEfecte: avui }))).rejects.toThrow();
+    });
+
+    it('no deixa canviar directament la renda d\'un contracte actiu i recalcula la fi amb una durada nova', async () => {
+      await amb((c) => actualitzarContracte(c, contracteId, { estat: 'actiu' }));
+      await expect(amb((c) => actualitzarContracte(c, contracteId, { renda: 800 }))).rejects.toThrow('data d\'efecte');
+
+      const actualitzat = await amb((c) =>
+        actualitzarContracte(c, contracteId, { duradaMesos: 12, preavisDies: null, moblat: false })
+      );
+      expect(actualitzat).toMatchObject({ dataFi: '2026-02-28', duradaMesos: 12, preavisDies: null, moblat: false });
+    });
+
+    it('desa i esborra garanties', async () => {
+      const aval = await amb((c) =>
+        crearGarantia(c, contracteId, { tipus: 'aval_bancari', import: 4200, entitat: 'Banc', dataVenciment: '2030-01-01' })
+      );
+      expect(await amb((c) => llistarGaranties(c, contracteId))).toHaveLength(1);
+      expect(await amb((c) => esborrarGarantia(c, contracteId, aval.id))).toBe(true);
+      expect(await amb((c) => llistarGaranties(c, contracteId))).toHaveLength(0);
     });
   });
 

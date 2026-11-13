@@ -171,6 +171,8 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 - El gestor pot crear un contracte associant una unitat, un o més inquilins i un o més propietaris.
 - El gestor pot definir el tipus d'ús del contracte (habitatge, local, parking, industrial, altres), que determina els límits de fiança aplicables.
 - El gestor pot definir la renda mensual, la durada, la data d'inici i l'índex d'actualització (IPC o índex pactat).
+  - Pactes implementats (`021_contractes_pactes.sql`): durada inicial, pròrrogues automàtiques fins a una durada màxima, preavís, tipus d'actualització (IPC, IRAV, percentatge fix o cap), moblat i garanties addicionals (aval, dipòsit, assegurança d'impagament).
+  - La renda i les despeses repercutides (escombraries, comunitat, IBI, subministraments, altres) porten historial: cada canvi d'import es registra amb una data d'efecte i l'anterior es conserva.
 - El gestor pot registrar l'import de la fiança dipositada.
 - El gestor pot renovar un contracte (pròrroga) abans del venciment.
 - El gestor pot resoldre un contracte anticipadament, indicant motiu i data efectiva.
