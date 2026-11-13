@@ -43,6 +43,8 @@ import { obtenirDadesExportacio, obtenirDashboard } from '@/lib/db/informes';
 import {
   actualitzarPagament,
   anularPagament,
+  generarRebuts,
+  llistarLiniesPagament,
   cobrarPagament,
   crearPagament,
   crearRemesa,
@@ -313,6 +315,54 @@ describe.skipIf(!adminUrl)('fluxos de negoci amb PostgreSQL real', () => {
       expect(await amb((c) => llistarGaranties(c, contracteId))).toHaveLength(1);
       expect(await amb((c) => esborrarGarantia(c, contracteId, aval.id))).toBe(true);
       expect(await amb((c) => llistarGaranties(c, contracteId))).toHaveLength(0);
+    });
+
+    it('genera el rebut del mes amb una línia per la renda i per cada despesa', async () => {
+      const des = '2099-01-01';
+      await amb(async (c) => {
+        await crearConcepte(c, contracteId, { tipus: 'ibi', import: 600, periodicitat: 'anual', vigentDesDe: des });
+        await crearConcepte(c, contracteId, { tipus: 'comunitat', import: 35.5, periodicitat: 'mensual', vigentDesDe: des });
+        await crearConcepte(c, contracteId, {
+          tipus: 'escombraries',
+          import: 90,
+          periodicitat: 'anual',
+          mesCobrament: 7,
+          vigentDesDe: des,
+        });
+      });
+
+      const juliol = await amb((c) => generarRebuts(c, { periode: '2099-07' }));
+      expect(juliol.creats).toBeGreaterThanOrEqual(1);
+      await amb((c) => generarRebuts(c, { periode: '2099-08' }));
+
+      const rebutDe = async (periode: string) => {
+        const { data } = await amb((c) => llistarPagaments(c, { ...QUERY, contracteId }));
+        const rebut = data.find((p) => p.periode === periode);
+        expect(rebut).toBeDefined();
+        return { rebut: rebut!, linies: await amb((c) => llistarLiniesPagament(c, rebut!.id)) };
+      };
+
+      const { rebut, linies } = await rebutDe('2099-07');
+      expect(rebut).toMatchObject({ concepte: 'Lloguer de juliol de 2099', dataVenciment: '2099-07-01', estat: 'pendent' });
+      expect(Number(rebut.import)).toBe(1174.5);
+      expect(linies.map((l) => [l.descripcio, Number(l.import)])).toEqual([
+        ['Renda', 999],
+        ['IBI, part mensual (1/12)', 50],
+        ['Comunitat', 35.5],
+        ["Taxa d'escombraries, anual", 90],
+      ]);
+
+      // L'escombraries anual només es cobra el juliol.
+      const agost = await rebutDe('2099-08');
+      expect(Number(agost.rebut.import)).toBe(1084.5);
+      expect(agost.linies).toHaveLength(3);
+
+      // Tornar a generar el mateix mes no duplica rebuts.
+      const repetit = await amb((c) => generarRebuts(c, { periode: '2099-07' }));
+      expect(repetit).toMatchObject({ creats: 0, jaExistien: juliol.creats });
+
+      // Neteja: no afectar els comptadors dels altres tests.
+      await amb((c) => c.query("UPDATE pagaments SET deleted_at = now() WHERE periode >= '2099-01-01'"));
     });
   });
 

@@ -31,6 +31,25 @@ export const crearRemesaSchema = z.object({
 });
 export type CrearRemesa = z.infer<typeof crearRemesaSchema>;
 
+const MESOS_REBUT = [
+  'gener', 'febrer', 'març', 'abril', 'maig', 'juny',
+  'juliol', 'agost', 'setembre', 'octubre', 'novembre', 'desembre',
+] as const;
+
+/** Mes dels rebuts generats, en format YYYY-MM. */
+export const generarRebutsSchema = z.object({
+  periode: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mes no vàlid (format YYYY-MM)'),
+});
+export type GenerarRebuts = z.infer<typeof generarRebutsSchema>;
+
+/** "Lloguer de novembre de 2026", "Lloguer d'abril de 2026". */
+export function concepteRebut(periode: string): string {
+  const [any, mes] = periode.split('-').map(Number);
+  const nom = MESOS_REBUT[mes - 1];
+  const de = /^[aeiou]/.test(nom) ? "d'" : 'de ';
+  return `Lloguer ${de}${nom} de ${any}`;
+}
+
 export const llistarPagamentsQuerySchema = paginationQuerySchema.extend({
   estat: estatPagamentEnum.optional(),
   contracteId: uuidSchema.optional(),

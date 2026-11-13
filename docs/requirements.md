@@ -201,6 +201,7 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 
 **Funcionalitats:**
 - El sistema pot generar automàticament els rebuts mensuals a partir dels contractes actius.
+  - Implementat amb el botó «Generar rebuts del mes» (`022_rebuts_linies.sql`): un rebut per contracte actiu i mes, amb una línia per la renda i per cada despesa repercutida vigent el dia 1. Tornar-lo a executar no duplica rebuts.
 - El comptable pot marcar un rebut com a cobrat, indicant data i mitjà de pagament.
 - El comptable pot agrupar rebuts en una remesa per a la seva gestió conjunta.
 - El comptable pot generar la liquidació d'un propietari per a un període (rendes cobrades menys despeses/comissió d'agència).

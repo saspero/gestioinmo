@@ -15,8 +15,26 @@ export interface Pagament {
   dataCobrament: string | null;
   metode: string | null;
   estat: 'pendent' | 'remesa' | 'cobrat' | 'vencut' | 'mora' | 'regularitzat';
+  /** Mes (YYYY-MM) d'un rebut generat; null si es va crear a mà. */
+  periode: string | null;
+  /** Només al detall: renda i despeses que componen el rebut. */
+  linies?: LiniaPagament[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LiniaPagament {
+  id: string;
+  concepteId: string | null;
+  tipus: string;
+  descripcio: string;
+  import: string;
+}
+
+export interface ResultatGenerarRebuts {
+  periode: string;
+  creats: number;
+  jaExistien: number;
 }
 
 export interface PagamentsFilters extends PaginationParams {
@@ -151,6 +169,21 @@ export function useCobrarPagament(id: string) {
       // l'inquilí deixi de tenir rebuts pendents i que `estatInquili` passi de 'moros' a
       // 'actiu' -> el llistat d'inquilins ha de refrescar-se.
       queryClient.invalidateQueries({ queryKey: inquilinsKeys.lists() });
+    },
+  });
+}
+
+/** POST /api/pagaments/generar — crea el rebut del mes de cada contracte actiu. */
+export function useGenerarRebuts() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (periode: string) =>
+      apiFetch<ResultatGenerarRebuts>('/api/pagaments/generar', {
+        method: 'POST',
+        body: JSON.stringify({ periode }),
+      }).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: pagamentsKeys.lists() });
     },
   });
 }

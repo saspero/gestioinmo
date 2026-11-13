@@ -79,6 +79,30 @@ export function PagamentDetailView({ id, canWrite }: PagamentDetailViewProps) {
         </CardContent>
       </Card>
 
+      {pagament.linies && pagament.linies.length > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">Detall del rebut</h2>
+            <table className="w-full text-sm">
+              <tbody>
+                {pagament.linies.map((linia) => (
+                  <tr key={linia.id} className="border-b border-border last:border-0">
+                    <td className="py-2 pr-4">{linia.descripcio}</td>
+                    <td className="py-2 text-right tabular-nums">{linia.import} €</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td className="pt-3 pr-4 font-semibold">Total</td>
+                  <td className="pt-3 text-right font-semibold tabular-nums">{pagament.import} €</td>
+                </tr>
+              </tfoot>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
       {canWrite && (
         <div className="flex flex-wrap gap-2">
           {potCobrar && <Button onClick={() => setCobrarOpen(true)}>Marcar com a cobrat</Button>}
