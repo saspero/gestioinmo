@@ -179,13 +179,15 @@ describe.skipIf(!adminUrl)('fluxos de negoci amb PostgreSQL real', () => {
       expect(data).toHaveLength(1);
       const id = data[0].id;
 
-      const canviat = await amb((c) => actualitzarContracte(c, id, { renda: 790 }));
-      expect(Number(canviat?.renda)).toBe(790);
+      // Un contracte actiu canvia la renda amb data d'efecte, no directament.
+      await expect(amb((c) => actualitzarContracte(c, id, { renda: 790 }))).rejects.toThrow('data d\'efecte');
 
       // Regla #4: la fiança no segueix la renda, així que una pujada d'IPC no la toca.
-      const pujat = await amb((c) => actualitzarContracte(c, id, { renda: 2000 }));
+      const [renda] = await amb((c) => llistarConceptes(c, id));
+      await amb((c) => modificarConcepte(c, id, renda.id, { import: 2000, dataEfecte: '2026-01-02' }));
+      const pujat = await amb((c) => obtenirContracte(c, id));
       expect(Number(pujat?.renda)).toBe(2000);
-      expect(Number(pujat?.fianca)).toBe(Number(canviat?.fianca));
+      expect(Number(pujat?.fianca)).toBe(800);
 
       const resolt = await amb((c) =>
         resoldreContracte(c, id, { motiuResolucio: 'Mutu acord', dataResolucio: '2026-06-30' })

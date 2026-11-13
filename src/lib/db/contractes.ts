@@ -192,7 +192,7 @@ export async function actualitzarContracte(
     push('durada_mesos', input.duradaMesos);
     // Una durada nova recalcula la fi del període inicial, si no se n'indica una altra.
     if (input.duradaMesos !== null && input.dataFi === undefined) {
-      sets.push(`data_fi = (data_inici + make_interval(months => ${values.length}))::date - 1`);
+      sets.push(`data_fi = (data_inici + make_interval(months => ${values.length}::int))::date - 1`);
     }
   }
   if (input.prorrogaAutomatica !== undefined) push('prorroga_automatica', input.prorrogaAutomatica);
