@@ -2,7 +2,9 @@ import type { PoolClient } from 'pg';
 import { buildLimitOffsetClause, buildOrderByClause, buildMeta } from './pagination';
 import { BusinessRuleError } from './business-error';
 import {
+  avisosContracte,
   sumarDies,
+  type AvisContracte,
   type CrearContracte,
   type ActualitzarContracte,
   type ResoldreContracte,
@@ -36,8 +38,39 @@ export interface Contracte {
   documentUrl: string | null;
   motiuResolucio: string | null;
   dataResolucio: string | null;
+  darrerCanviRenda: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AvisosDeContracte {
+  contracteId: string;
+  /** Adreça de la propietat, unitat i inquilins, per reconèixer el contracte. */
+  nom: string;
+  avisos: AvisContracte[];
+}
+
+/** Avisos (actualització de renda i no renovació) de tots els contractes actius. */
+export async function llistarAvisosContractes(client: PoolClient, avui: string): Promise<AvisosDeContracte[]> {
+  const { rows } = await client.query<Contracte & { nom: string }>(
+    `SELECT ${CONTRACTE_COLUMNS},
+            concat_ws(' · ',
+              (SELECT p.adreca || CASE WHEN u.referencia IS NOT NULL AND (
+                         SELECT count(*) FROM unitats u2 WHERE u2.propietat_id = p.id AND u2.deleted_at IS NULL) > 1
+                       THEN ' (' || u.referencia || ')' ELSE '' END
+                 FROM unitats u JOIN propietats p ON p.id = u.propietat_id
+                WHERE u.id = contractes.unitat_id),
+              (SELECT string_agg(concat_ws(' ', pe.nom, pe.cognoms), ', ' ORDER BY pe.nom)
+                 FROM contracte_inquilins ci JOIN persones pe ON pe.id = ci.persona_id
+                WHERE ci.contracte_id = contractes.id)
+            ) AS nom
+       FROM contractes
+      WHERE estat = 'actiu' AND deleted_at IS NULL
+      ORDER BY data_inici`
+  );
+  return rows
+    .map((contracte) => ({ contracteId: contracte.id, nom: contracte.nom, avisos: avisosContracte(contracte, avui) }))
+    .filter((fila) => fila.avisos.length > 0);
 }
 
 // `contractes.renda` és la renda inicial; la vigent surt de l'historial de conceptes.
@@ -48,6 +81,13 @@ export const RENDA_VIGENT = `COALESCE((
      ORDER BY cc.vigent_des_de DESC LIMIT 1
   ), contractes.renda)`;
 
+// Data d'efecte de la renda més recent, també d'un canvi futur ja programat. Serveix per
+// saber si l'actualització d'un aniversari ja s'ha aplicat.
+const DARRER_CANVI_RENDA = `(
+    SELECT max(cc.vigent_des_de)::text FROM contracte_conceptes cc
+     WHERE cc.contracte_id = contractes.id AND cc.tipus = 'renda'
+  )`;
+
 const CONTRACTE_COLUMNS = `
   id, unitat_id AS "unitatId", tipus_us AS "tipusUs", data_inici::text AS "dataInici",
   data_fi::text AS "dataFi", ${RENDA_VIGENT} AS renda, renda AS "rendaInicial", fianca,
@@ -57,6 +97,7 @@ const CONTRACTE_COLUMNS = `
   durada_maxima_mesos AS "duradaMaximaMesos", preavis_dies AS "preavisDies", moblat,
   estat, document_url AS "documentUrl",
   motiu_resolucio AS "motiuResolucio", data_resolucio::text AS "dataResolucio",
+  ${DARRER_CANVI_RENDA} AS "darrerCanviRenda",
   created_at AS "createdAt", updated_at AS "updatedAt"
 `;
 

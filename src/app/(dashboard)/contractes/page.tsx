@@ -7,6 +7,7 @@ import { Forbidden } from '@/app/(dashboard)/_lib/forbidden';
 import { PageHeader } from '@/components/shared';
 import { buttonVariants } from '@/components/ui/button';
 import { ContractesListView } from '@/features/contractes/components/contractes-list-view';
+import { AvisosContractesCard } from '@/features/contractes/components/avisos-contracte';
 
 export const metadata: Metadata = { title: 'Contractes · Gestinmo' };
 
@@ -29,6 +30,7 @@ export default async function ContractesPage() {
           )
         }
       />
+      <AvisosContractesCard canWrite={canWrite} />
       <ContractesListView />
     </div>
   );

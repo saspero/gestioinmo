@@ -4,6 +4,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, buildQueryString, type PaginationParams } from './api-client';
 import { pagamentsKeys } from './use-pagaments';
+import type { AvisContracte } from '@/lib/validations/contractes';
 
 export interface Contracte {
   id: string;
@@ -28,6 +29,8 @@ export interface Contracte {
   documentUrl: string | null;
   motiuResolucio: string | null;
   dataResolucio: string | null;
+  /** Data d'efecte de la renda més recent (també d'un canvi futur ja programat). */
+  darrerCanviRenda: string | null;
   createdAt: string;
   updatedAt: string;
   // Present només al GET/POST de detall (docs/api contractes/route.ts): ids dels
@@ -145,7 +148,22 @@ export const contractesKeys = {
   detail: (id: string) => [...contractesKeys.details(), id] as const,
   conceptes: (id: string) => [...contractesKeys.detail(id), 'conceptes'] as const,
   garanties: (id: string) => [...contractesKeys.detail(id), 'garanties'] as const,
+  // Penja de `lists()` perquè qualsevol canvi que refresca el llistat refresqui els avisos.
+  avisos: () => [...contractesKeys.lists(), 'avisos'] as const,
 };
+
+export interface AvisosDeContracte {
+  contracteId: string;
+  nom: string;
+  avisos: AvisContracte[];
+}
+
+export function useAvisosContractes() {
+  return useQuery({
+    queryKey: contractesKeys.avisos(),
+    queryFn: () => apiFetch<AvisosDeContracte[]>('/api/contractes/avisos').then((res) => res.data),
+  });
+}
 
 export function useListContractes(filters: ContractesFilters = {}) {
   return useQuery({

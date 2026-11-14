@@ -218,3 +218,110 @@ export function properVenciment(
   }
   return fi;
 }
+
+// --- Avisos del contracte ---
+
+/** Dies abans de l'aniversari en què s'avisa d'actualitzar la renda. */
+export const DIES_AVIS_ACTUALITZACIO = 60;
+/** Fins quants dies després de l'aniversari es continua avisant si no s'ha aplicat. */
+export const DIES_AVIS_ACTUALITZACIO_TARD = 30;
+/**
+ * Preavís per no renovar quan el contracte no en té: els 4 mesos que la LAU demana al
+ * propietari (art. 10, redacció del 2019), que és qui representa l'agència.
+ */
+export const PREAVIS_PER_DEFECTE_DIES = 120;
+/** Dies abans del límit per comunicar la no renovació en què comença l'avís. */
+export const DIES_AVIS_NO_RENOVACIO = 30;
+
+export type AvisContracte =
+  | {
+      tipus: 'actualitzacio';
+      aniversari: string;
+      rendaActual: number;
+      /** Percentatge pactat (percentatge fix); null si depèn de l'IPC o l'IRAV del moment. */
+      percentatge: number | null;
+      rendaProposada: number | null;
+    }
+  | {
+      tipus: 'no_renovacio';
+      venciment: string;
+      limit: string;
+      preavisDies: number;
+      preavisPerDefecte: boolean;
+      prorrogaAutomatica: boolean;
+    };
+
+export interface ContractePerAvisos {
+  estat: string;
+  dataInici: string;
+  dataFi: string | null;
+  duradaMesos: number | null;
+  prorrogaAutomatica: boolean;
+  prorrogaMesos: number | null;
+  duradaMaximaMesos: number | null;
+  preavisDies: number | null;
+  tipusActualitzacio: string | null;
+  percentatgePactat: string | number | null;
+  renda: string | number;
+  /** Data d'efecte de la fila de renda més recent (inclou canvis futurs ja programats). */
+  darrerCanviRenda: string | null;
+}
+
+/** Renda actualitzada amb un percentatge, arrodonida a cèntims. */
+export function rendaActualitzada(renda: number, percentatge: number): number {
+  return Math.round(renda * (100 + percentatge)) / 100;
+}
+
+/** Primer aniversari (1 any, 2 anys...) que no és anterior a `desDe`. */
+export function aniversariDesDe(dataInici: string, desDe: string): string {
+  let anys = 1;
+  while (sumarMesos(dataInici, anys * 12) < desDe) anys++;
+  return sumarMesos(dataInici, anys * 12);
+}
+
+export function avisosContracte(contracte: ContractePerAvisos, avui: string): AvisContracte[] {
+  if (contracte.estat !== 'actiu') return [];
+  const avisos: AvisContracte[] = [];
+
+  if (contracte.tipusActualitzacio && contracte.tipusActualitzacio !== 'cap') {
+    const aniversari = aniversariDesDe(contracte.dataInici, sumarDies(avui, -DIES_AVIS_ACTUALITZACIO_TARD));
+    const jaAplicada = contracte.darrerCanviRenda !== null && contracte.darrerCanviRenda >= aniversari;
+    if (!jaAplicada && aniversari <= sumarDies(avui, DIES_AVIS_ACTUALITZACIO)) {
+      const rendaActual = Number(contracte.renda);
+      const percentatge =
+        contracte.tipusActualitzacio === 'percentatge_fix' && contracte.percentatgePactat !== null
+          ? Number(contracte.percentatgePactat)
+          : null;
+      avisos.push({
+        tipus: 'actualitzacio',
+        aniversari,
+        rendaActual,
+        percentatge,
+        rendaProposada: percentatge === null ? null : rendaActualitzada(rendaActual, percentatge),
+      });
+    }
+  }
+
+  const venciment = properVenciment(contracte, avui);
+  if (venciment && venciment >= avui) {
+    const preavisDies = contracte.preavisDies ?? PREAVIS_PER_DEFECTE_DIES;
+    const limit = sumarDies(venciment, -preavisDies);
+    if (avui >= sumarDies(limit, -DIES_AVIS_NO_RENOVACIO)) {
+      avisos.push({
+        tipus: 'no_renovacio',
+        venciment,
+        limit,
+        preavisDies,
+        preavisPerDefecte: contracte.preavisDies === null,
+        prorrogaAutomatica: contracte.prorrogaAutomatica,
+      });
+    }
+  }
+
+  return avisos;
+}
+
+/** Data d'avui (YYYY-MM-DD) a l'hora peninsular, també quan el servidor és en UTC. */
+export function avuiLocal(ara: Date = new Date()): string {
+  return ara.toLocaleDateString('en-CA', { timeZone: 'Europe/Madrid' });
+}
