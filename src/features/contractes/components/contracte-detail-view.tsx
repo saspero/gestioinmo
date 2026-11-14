@@ -33,6 +33,7 @@ import { properVenciment } from '@/lib/validations/contractes';
 import { PactesFields, pactesInput, valorsPactes, type PactesValues } from './pactes-fields';
 import { ConceptesSection } from './conceptes-section';
 import { GarantiesSection } from './garanties-section';
+import { AvisosContracte } from './avisos-contracte';
 import { DocumentsSection } from '@/features/documents/components/documents-section';
 
 interface ContracteDetailViewProps {
@@ -78,6 +79,7 @@ export function ContracteDetailView({ id, canWrite }: ContracteDetailViewProps) 
 
   return (
     <div className="flex flex-col gap-6">
+      <AvisosContracte contracte={contracte} canWrite={canWrite} />
       <Card>
         <CardContent className="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-3">
           <Field

@@ -173,6 +173,9 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 - El gestor pot definir la renda mensual, la durada, la data d'inici i l'índex d'actualització (IPC o índex pactat).
   - Pactes implementats (`021_contractes_pactes.sql`): durada inicial, pròrrogues automàtiques fins a una durada màxima, preavís, tipus d'actualització (IPC, IRAV, percentatge fix o cap), moblat i garanties addicionals (aval, dipòsit, assegurança d'impagament).
   - La renda i les despeses repercutides (escombraries, comunitat, IBI, subministraments, altres) porten historial: cada canvi d'import es registra amb una data d'efecte i l'anterior es conserva.
+  - Avisos (`avisosContracte`, `src/lib/validations/contractes.ts`), a la pàgina de Contractes i a la fitxa:
+    - Actualització de la renda: des de 60 dies abans de cada aniversari fins a 30 dies després, mentre no s'hagi aplicat. Proposa la renda nova amb el percentatge pactat; amb IPC o IRAV el gestor hi posa el percentatge. S'aplica amb un clic com un canvi de renda amb data d'efecte a l'aniversari.
+    - Termini per no renovar: des de 30 dies abans del límit (venciment del període menys el preavís) fins al venciment. Sense preavís pactat, s'usen 120 dies (4 mesos que la LAU demana al propietari, art. 10).
 - El gestor pot registrar l'import de la fiança dipositada.
 - El gestor pot renovar un contracte (pròrroga) abans del venciment.
 - El gestor pot resoldre un contracte anticipadament, indicant motiu i data efectiva.

@@ -14,6 +14,7 @@ import {
   donarBaixaConcepte,
   donarBaixaContracte,
   esborrarGarantia,
+  llistarAvisosContractes,
   llistarConceptes,
   llistarContractes,
   llistarGaranties,
@@ -361,7 +362,13 @@ describe.skipIf(!adminUrl)('fluxos de negoci amb PostgreSQL real', () => {
       const repetit = await amb((c) => generarRebuts(c, { periode: '2099-07' }));
       expect(repetit).toMatchObject({ creats: 0, jaExistien: juliol.creats });
 
-      // Neteja: no afectar els comptadors dels altres tests.
+      // Neteja (més avall): no afectar els comptadors dels altres tests.
+      const avisos = await amb((c) => llistarAvisosContractes(c, '2025-10-15'));
+      const nostre = avisos.find((a) => a.contracteId === contracteId);
+      expect(nostre?.nom).toContain('Nou 1');
+      // La renda ja té un canvi programat (2099), així que només queda l'avís de no renovar.
+      expect(nostre?.avisos).toMatchObject([{ tipus: 'no_renovacio', venciment: '2026-02-28', limit: '2025-10-31' }]);
+
       await amb((c) => c.query("UPDATE pagaments SET deleted_at = now() WHERE periode >= '2099-01-01'"));
     });
   });
