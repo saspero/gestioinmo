@@ -44,6 +44,7 @@ type FormValues = {
   superficieEdificable: string;
   tipusSol: string;
   notes: string;
+  comissioPercentatge: string;
 };
 
 const INITIAL_VALUES: FormValues = {
@@ -64,6 +65,7 @@ const INITIAL_VALUES: FormValues = {
   superficieEdificable: '',
   tipusSol: '',
   notes: '',
+  comissioPercentatge: '',
 };
 
 const textInicial = (valor: string | number | null) => (valor === null ? '' : String(valor));
@@ -89,6 +91,7 @@ function valorsInicials(propietat?: Propietat): FormValues {
     superficieEdificable: textInicial(propietat.superficieEdificable),
     tipusSol: textInicial(propietat.tipusSol),
     notes: textInicial(propietat.notes),
+    comissioPercentatge: textInicial(propietat.comissioPercentatge),
   };
 }
 
@@ -121,6 +124,7 @@ export function construirInput(values: FormValues, edicio: boolean): Actualitzar
     superficieEdificable: si('superficieEdificable', numero(values.superficieEdificable)),
     tipusSol: si('tipusSol', (values.tipusSol || buit) as ActualitzarPropietatInput['tipusSol']),
     notes: text(values.notes),
+    comissioPercentatge: numero(values.comissioPercentatge),
   };
 }
 
@@ -289,6 +293,14 @@ export function PropietatForm({ propietat, onClose }: PropietatFormProps = {}) {
           </label>
         </div>
       )}
+
+      <FormField
+        label="Comissió de l'agència (%)"
+        description="Sobre la renda cobrada, sense IVA. Es fa servir a les liquidacions al propietari."
+        error={fieldErrors.comissioPercentatge}
+      >
+        <Input type="number" min="0" max="100" step="0.01" className="sm:max-w-[10rem]" {...camp('comissioPercentatge')} />
+      </FormField>
 
       <FormField label="Notes" error={fieldErrors.notes}>
         <Textarea {...camp('notes')} />

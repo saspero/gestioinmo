@@ -29,6 +29,7 @@ export interface Propietat {
   superficieEdificable: string | null;
   tipusSol: string | null;
   notes: string | null;
+  comissioPercentatge: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,6 +39,7 @@ const PROPIETAT_COLUMNS = `
   ascensor, cert_energetic AS "certEnergetic", notes,
   referencia_cadastral AS "referenciaCadastral", numero_placa AS "numeroPlaca", planta,
   num_pisos AS "numPisos", superficie_edificable AS "superficieEdificable", tipus_sol AS "tipusSol",
+  comissio_percentatge AS "comissioPercentatge",
   created_at AS "createdAt", updated_at AS "updatedAt"
 `;
 
@@ -145,8 +147,9 @@ async function substituirTitulars(
 export async function crearPropietat(client: PoolClient, input: CrearPropietat): Promise<Propietat> {
   const { rows } = await client.query<Propietat>(
     `INSERT INTO propietats (referencia, tipus, adreca, poblacio, cp, superficie, habitacions, banys, ascensor, cert_energetic, notes,
-                             referencia_cadastral, numero_placa, planta, num_pisos, superficie_edificable, tipus_sol)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                             referencia_cadastral, numero_placa, planta, num_pisos, superficie_edificable, tipus_sol,
+                             comissio_percentatge)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
      RETURNING ${PROPIETAT_COLUMNS}`,
     [
       input.referencia,
@@ -166,6 +169,7 @@ export async function crearPropietat(client: PoolClient, input: CrearPropietat):
       input.numPisos ?? null,
       input.superficieEdificable ?? null,
       input.tipusSol ?? null,
+      input.comissioPercentatge ?? null,
     ]
   );
   const propietat = rows[0];
@@ -219,6 +223,7 @@ export async function actualitzarPropietat(
   if (input.ascensor !== undefined) push('ascensor', input.ascensor);
   if (input.certEnergetic !== undefined) push('cert_energetic', input.certEnergetic);
   if (input.notes !== undefined) push('notes', input.notes);
+  if (input.comissioPercentatge !== undefined) push('comissio_percentatge', input.comissioPercentatge);
   if (input.referenciaCadastral !== undefined) push('referencia_cadastral', input.referenciaCadastral);
   if (input.numeroPlaca !== undefined) push('numero_placa', input.numeroPlaca);
   if (input.planta !== undefined) push('planta', input.planta);

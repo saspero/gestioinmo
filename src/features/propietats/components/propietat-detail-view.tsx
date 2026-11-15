@@ -73,6 +73,10 @@ export function PropietatDetailView({ id, canWrite }: PropietatDetailViewProps) 
           {te('planta') && <Field label="Planta" value={propietat.planta ?? '—'} />}
           {te('ascensor') && <Field label="Ascensor" value={propietat.ascensor ? 'Sí' : 'No'} />}
           {te('certEnergetic') && <Field label="Certificat energètic" value={propietat.certEnergetic ?? '—'} />}
+          <Field
+            label="Comissió de l'agència"
+            value={propietat.comissioPercentatge !== null ? `${Number(propietat.comissioPercentatge)} % + IVA` : '—'}
+          />
           {propietat.notes && <Field label="Notes" value={propietat.notes} className="sm:col-span-2 lg:col-span-3" />}
         </CardContent>
       </Card>

@@ -208,6 +208,7 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 - El comptable pot marcar un rebut com a cobrat, indicant data i mitjà de pagament.
 - El comptable pot agrupar rebuts en una remesa per a la seva gestió conjunta.
 - El comptable pot generar la liquidació d'un propietari per a un període (rendes cobrades menys despeses/comissió d'agència).
+  - Implementat a Pagaments › Liquidacions (`023_liquidacions.sql`): període lliure, una liquidació per propietari. Es reparteix pel percentatge de titularitat. Comissió amb el percentatge de cada propietat, només sobre la renda cobrada (no sobre les despeses que retorna l'inquilí), més un 21 % d'IVA. Es descompten les despeses marcades a càrrec del propietari. Es pot imprimir, marcar com a pagada i, si no està pagada, esborrar.
 - El sistema marca un rebut com a vençut quan han passat més de 5 dies des de la data límit de pagament sense estar cobrat. El marge cobreix les transferències, que poden arribar o registrar-se uns dies tard; el mètode de cobrament no canvia la regla.
 - El sistema pot activar l'estat de mora de l'inquilí quan un rebut porta més de 30 dies vençut (regla de negoci, secció 5).
 - El comptable pot exportar el llistat de rebuts i liquidacions en CSV i PDF.

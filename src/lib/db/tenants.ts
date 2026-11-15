@@ -30,6 +30,7 @@ const MIGRACIONS_TENANT = [
   '020_unitat_unica.sql',
   '021_contractes_pactes.sql',
   '022_rebuts_linies.sql',
+  '023_liquidacions.sql',
 ] as const;
 
 export interface TenantProvisionat {

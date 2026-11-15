@@ -19,12 +19,20 @@ const valors = {
   superficieEdificable: '',
   tipusSol: '',
   notes: '',
+  comissioPercentatge: '5.5',
 };
 
 describe('construirInput', () => {
   it('en una alta no envia els camps buits ni els que el tipus no té', () => {
     const input = construirInput(valors, false);
-    expect(input).toMatchObject({ tipus: 'parking', cp: '08001', superficie: 12, numeroPlaca: '4', ascensor: false });
+    expect(input).toMatchObject({
+      tipus: 'parking',
+      cp: '08001',
+      superficie: 12,
+      numeroPlaca: '4',
+      ascensor: false,
+      comissioPercentatge: 5.5,
+    });
     expect(input.poblacio).toBeUndefined();
     expect(input.habitacions).toBeUndefined();
   });

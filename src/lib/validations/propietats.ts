@@ -79,6 +79,8 @@ const basePropietatSchema = z.object({
   superficieEdificable: z.number().nonnegative().optional(),
   tipusSol: tipusSolEnum.optional(),
   notes: z.string().trim().optional(),
+  /** Comissió de l'agència sobre la renda cobrada, en percentatge. */
+  comissioPercentatge: z.number().min(0).max(100).optional(),
   titulars: z.array(titularSchema).optional(),
 });
 
@@ -115,6 +117,7 @@ const actualitzarPropietatBaseSchema = basePropietatSchema.partial().extend({
   superficieEdificable: opcionalEsborrable(base.superficieEdificable.unwrap()),
   tipusSol: opcionalEsborrable(tipusSolEnum),
   notes: opcionalEsborrable(base.notes.unwrap()),
+  comissioPercentatge: opcionalEsborrable(base.comissioPercentatge.unwrap()),
 });
 
 /** Si canvia el tipus, s'esborren els camps que el tipus nou no té. */
