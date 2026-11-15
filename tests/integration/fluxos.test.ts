@@ -71,6 +71,8 @@ import { crearContracteSchema } from '@/lib/validations/contractes';
 import { crearDespesaSchema } from '@/lib/validations/despeses';
 import { crearIncidenciaSchema } from '@/lib/validations/incidencies';
 import { crearPagamentSchema } from '@/lib/validations/pagaments';
+import { obtenirInforme } from '@/lib/db/informes-llistats';
+import { informeIdEnum, type InformeId } from '@/lib/validations/informes';
 import {
   esborrarLiquidacio,
   generarLiquidacions,
@@ -638,6 +640,28 @@ describe.skipIf(!adminUrl)('fluxos de negoci amb PostgreSQL real', () => {
       });
       await expect(amb((c) => pagarLiquidacio(c, nova.id, { dataPagament: '2030-02-06' }))).rejects.toThrow('pagada');
       await expect(amb((c) => esborrarLiquidacio(c, nova.id))).rejects.toThrow('pagada');
+    });
+
+    it('treu els informes de la pestanya Informes', async () => {
+      const filtres = { dataInici: '2030-01-01', dataFi: '2030-12-31', propietariId: anna };
+      const informe = (id: InformeId) => amb((c) => obtenirInforme(c, id, filtres, '2030-03-01'));
+
+      expect((await informe('ingressos')).files).toEqual([
+        { propietat: 'LIQ-1 · Clos 3', mes: '2030-01', emes: 1100, cobrat: 1100, pendent: 0 },
+      ]);
+      expect((await informe('rendiment')).files).toEqual([
+        { propietat: 'LIQ-1 · Clos 3', cobrat: 1100, despeses: 250, rendiment: 850 },
+      ]);
+      const resum = await informe('liquidacions');
+      expect(resum.files).toMatchObject([{ propietari: 'Anna', net: 503.7, pagada: '2030-02-05' }]);
+      expect(resum.totals).toMatchObject({ net: 503.7 });
+
+      // La resta d'informes funcionen amb aquests filtres.
+      for (const id of informeIdEnum.options) {
+        const r = await informe(id);
+        expect(r.columnes.length).toBeGreaterThan(0);
+      }
+      expect((await informe('ocupacio')).files).toMatchObject([{ unitat: expect.any(String), estat: 'Llogada' }]);
     });
   });
 });
