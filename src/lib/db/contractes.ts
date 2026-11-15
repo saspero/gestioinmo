@@ -53,17 +53,7 @@ export interface AvisosDeContracte {
 /** Avisos (actualització de renda i no renovació) de tots els contractes actius. */
 export async function llistarAvisosContractes(client: PoolClient, avui: string): Promise<AvisosDeContracte[]> {
   const { rows } = await client.query<Contracte & { nom: string }>(
-    `SELECT ${CONTRACTE_COLUMNS},
-            concat_ws(' · ',
-              (SELECT p.adreca || CASE WHEN u.referencia IS NOT NULL AND (
-                         SELECT count(*) FROM unitats u2 WHERE u2.propietat_id = p.id AND u2.deleted_at IS NULL) > 1
-                       THEN ' (' || u.referencia || ')' ELSE '' END
-                 FROM unitats u JOIN propietats p ON p.id = u.propietat_id
-                WHERE u.id = contractes.unitat_id),
-              (SELECT string_agg(concat_ws(' ', pe.nom, pe.cognoms), ', ' ORDER BY pe.nom)
-                 FROM contracte_inquilins ci JOIN persones pe ON pe.id = ci.persona_id
-                WHERE ci.contracte_id = contractes.id)
-            ) AS nom
+    `SELECT ${CONTRACTE_COLUMNS}, ${nomContracteDe('contractes')} AS nom
        FROM contractes
       WHERE estat = 'actiu' AND deleted_at IS NULL
       ORDER BY data_inici`
@@ -74,12 +64,39 @@ export async function llistarAvisosContractes(client: PoolClient, avui: string):
 }
 
 // `contractes.renda` és la renda inicial; la vigent surt de l'historial de conceptes.
-export const RENDA_VIGENT = `COALESCE((
+/** Renda vigent avui del contracte de l'àlies indicat (la taula `contractes` o un àlies seu). */
+export function rendaVigentDe(alias: string): string {
+  return `COALESCE((
     SELECT cc.import FROM contracte_conceptes cc
-     WHERE cc.contracte_id = contractes.id AND cc.tipus = 'renda' AND cc.vigent_des_de <= current_date
+     WHERE cc.contracte_id = ${alias}.id AND cc.tipus = 'renda' AND cc.vigent_des_de <= current_date
        AND (cc.vigent_fins IS NULL OR cc.vigent_fins >= current_date)
      ORDER BY cc.vigent_des_de DESC LIMIT 1
-  ), contractes.renda)`;
+  ), ${alias}.renda)`;
+}
+
+export const RENDA_VIGENT = rendaVigentDe('contractes');
+
+/**
+ * Nom llegible d'un contracte: adreça de la propietat (amb la unitat si n'hi ha més d'una)
+ * i inquilins.
+ */
+export function nomContracteDe(alias: string): string {
+  return `concat_ws(' · ',
+    (SELECT p.adreca || CASE WHEN (
+               SELECT count(*) FROM unitats u2 WHERE u2.propietat_id = p.id AND u2.deleted_at IS NULL) > 1
+             THEN ' (' || u.referencia || ')' ELSE '' END
+       FROM unitats u JOIN propietats p ON p.id = u.propietat_id
+      WHERE u.id = ${alias}.unitat_id),
+    ${inquilinsDe(alias)}
+  )`;
+}
+
+/** Noms dels inquilins d'un contracte, separats per comes. */
+export function inquilinsDe(alias: string): string {
+  return `(SELECT string_agg(concat_ws(' ', pe.nom, pe.cognoms), ', ' ORDER BY pe.nom)
+       FROM contracte_inquilins ci JOIN persones pe ON pe.id = ci.persona_id
+      WHERE ci.contracte_id = ${alias}.id)`;
+}
 
 // Data d'efecte de la renda més recent, també d'un canvi futur ja programat. Serveix per
 // saber si l'actualització d'un aniversari ja s'ha aplicat.

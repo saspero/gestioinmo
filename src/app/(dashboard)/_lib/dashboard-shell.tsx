@@ -9,6 +9,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   BarChart3,
   Building2,
+  FileBarChart,
   FileText,
   Receipt,
   Settings,
@@ -33,6 +34,7 @@ const NAVEGACIO: Array<NavItem & { modul: Modul }> = [
   { label: 'Pagaments', href: '/pagaments', modul: 'pagaments', icon: Wallet },
   { label: 'Despeses', href: '/despeses', modul: 'despeses', icon: Receipt },
   { label: 'Incidències', href: '/incidencies', modul: 'incidencies', icon: Wrench },
+  { label: 'Informes', href: '/informes', modul: 'informes', icon: FileBarChart },
   { label: 'Configuració', href: '/configuracio', modul: 'config_tenant', icon: Settings },
 ];
 

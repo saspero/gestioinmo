@@ -264,6 +264,9 @@ Llegenda: `T` = total (lectura + escriptura), `L` = només lectura, `-` = sense 
 - Qualsevol usuari amb accés al mòdul pot filtrar els indicadors per rang de dates, propietat o propietari.
 - L'usuari pot exportar qualsevol llistat (propietats, contractes, rebuts, incidències) en format CSV i PDF.
 - El sistema pot generar un informe de liquidació mensual per propietari.
+- Pestanya **Informes** (`/informes`): vuit informes, cadascun en pantalla, PDF (pdf-lib, A4 apaïsat) i CSV per a Excel (punt i coma, coma decimal). Filtres de període, propietat i propietari. Definicions a `INFORMES` (`src/lib/validations/informes.ts`) i consultes a `src/lib/db/informes-llistats.ts`.
+  - Econòmics: ingressos per propietat (emès/cobrat/pendent per mes), rendiment per propietat (cobrat − despeses), resum de liquidacions i morositat (a dia d'avui).
+  - Gestió: venciments de contractes (per defecte els propers 6 mesos), actualitzacions de renda (aniversaris i si ja s'ha aplicat), ocupació (a dia d'avui) i incidències (obertes i resoltes en el període, amb cost).
 
 **Restriccions:**
 - Els informes respecten sempre els permisos del mòdul d'origen (ex: el gestor no veu detalls econòmics de liquidació de propietari als informes si no en té accés).
