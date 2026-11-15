@@ -28,6 +28,7 @@ export interface Propietat {
   superficieEdificable: string | null;
   tipusSol: 'rural' | 'rustic' | 'urbanitzable' | null;
   notes: string | null;
+  comissioPercentatge: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,6 +57,7 @@ export interface CrearPropietatInput {
   superficieEdificable?: number;
   tipusSol?: 'rural' | 'rustic' | 'urbanitzable';
   notes?: string;
+  comissioPercentatge?: number;
   titulars?: Titular[];
 }
 

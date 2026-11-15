@@ -71,6 +71,13 @@ import { crearContracteSchema } from '@/lib/validations/contractes';
 import { crearDespesaSchema } from '@/lib/validations/despeses';
 import { crearIncidenciaSchema } from '@/lib/validations/incidencies';
 import { crearPagamentSchema } from '@/lib/validations/pagaments';
+import {
+  esborrarLiquidacio,
+  generarLiquidacions,
+  llistarLiniesLiquidacio,
+  llistarLiquidacions,
+  pagarLiquidacio,
+} from '@/lib/db/liquidacions';
 import { actualitzarPropietatSchema, crearPropietatSchema } from '@/lib/validations/propietats';
 import { recursExportEnum } from '@/lib/validations/informes';
 import { crearBdTest } from '../helpers/test-db';
@@ -534,5 +541,103 @@ describe.skipIf(!adminUrl)('fluxos de negoci amb PostgreSQL real', () => {
     expect((await ambAltra((c) => llistarPagaments(c, QUERY))).meta.total).toBe(0);
     expect((await ambAltra((c) => llistarIncidencies(c, QUERY))).meta.total).toBe(0);
     expect((await ambAltra((c) => obtenirDashboard(c, {}))).ocupacio.totalUnitats).toBe(0);
+  });
+
+  describe('liquidacions', () => {
+    let anna: string;
+    let bernat: string;
+    const periode = { periodeInici: '2030-01-01', periodeFi: '2030-01-31' };
+
+    beforeAll(async () => {
+      anna = (await amb((c) => crearPersona(c, 'propietari', { nom: 'Anna', nif: '12345678Z' }))).id;
+      bernat = (await amb((c) => crearPersona(c, 'propietari', { nom: 'Bernat', nif: '11111111H' }))).id;
+      const pis = await amb((c) =>
+        crearPropietat(
+          c,
+          crearPropietatSchema.parse({
+            referencia: 'LIQ-1',
+            tipus: 'pis',
+            adreca: 'Clos 3',
+            comissioPercentatge: 5,
+            titulars: [
+              { personaId: anna, percentatge: 60 },
+              { personaId: bernat, percentatge: 40 },
+            ],
+          })
+        )
+      );
+      const [unitat] = await amb((c) => llistarUnitats(c, pis.id));
+      const contracte = await amb((c) =>
+        crearContracte(
+          c,
+          crearContracteSchema.parse({ unitatId: unitat.id, dataInici: '2030-01-01', renda: 1000, inquilinsIds: [inquiliId] })
+        )
+      );
+      await amb((c) => actualitzarContracte(c, contracte.id, { estat: 'actiu' }));
+      await amb((c) =>
+        crearConcepte(c, contracte.id, { tipus: 'ibi', import: 1200, periodicitat: 'anual', vigentDesDe: '2030-01-01' })
+      );
+
+      await amb((c) => generarRebuts(c, { periode: '2030-01' }));
+      const { data } = await amb((c) => llistarPagaments(c, { ...QUERY, contracteId: contracte.id }));
+      expect(Number(data[0].import)).toBe(1100);
+      await amb((c) => cobrarPagament(c, data[0].id, { dataCobrament: '2030-01-05', metode: 'transferencia' }));
+
+      await amb((c) =>
+        crearDespesa(c, crearDespesaSchema.parse({ propietatId: pis.id, concepte: 'Caldera', import: 200, dataDespesa: '2030-01-10' }))
+      );
+      await amb((c) =>
+        crearDespesa(
+          c,
+          crearDespesaSchema.parse({
+            propietatId: pis.id,
+            concepte: 'Gestoria interna',
+            import: 50,
+            dataDespesa: '2030-01-12',
+            repercutiblePropietari: false,
+          })
+        )
+      );
+      // Altres tests deixen rebuts cobrats sense propietaris: no entren a cap liquidació.
+    });
+
+    it('reparteix per titularitat i descompta despeses, comissió sobre la renda i IVA', async () => {
+      const creades = await amb((c) => generarLiquidacions(c, periode));
+      const deAnna = creades.find((l) => l.propietariId === anna);
+      const deBernat = creades.find((l) => l.propietariId === bernat);
+
+      expect(deAnna).toMatchObject({
+        totalCobrat: '660.00',
+        totalDespeses: '120.00',
+        comissioAgencia: '30.00',
+        ivaComissio: '6.30',
+        netALiquidar: '503.70',
+        propietariNom: 'Anna',
+      });
+      expect(deBernat).toMatchObject({ totalCobrat: '440.00', comissioAgencia: '20.00', netALiquidar: '335.80' });
+
+      const linies = await amb((c) => llistarLiniesLiquidacio(c, deAnna!.id));
+      expect(linies.map((l) => [l.tipus, l.import, l.baseComissio])).toEqual([
+        ['cobrament', '660.00', '600.00'],
+        ['despesa', '120.00', '0.00'],
+      ]);
+
+      // El que ja s'ha liquidat no es torna a incloure.
+      expect(await amb((c) => generarLiquidacions(c, periode))).toEqual([]);
+    });
+
+    it('en esborrar-la, el contingut torna a quedar per liquidar; un cop pagada no es pot esborrar', async () => {
+      const { data } = await amb((c) => llistarLiquidacions(c, { ...QUERY, propietariId: anna }));
+      expect(await amb((c) => esborrarLiquidacio(c, data[0].id))).toBe(true);
+
+      const [nova] = await amb((c) => generarLiquidacions(c, { ...periode, propietariId: anna }));
+      expect(nova).toMatchObject({ propietariId: anna, netALiquidar: '503.70' });
+
+      expect(await amb((c) => pagarLiquidacio(c, nova.id, { dataPagament: '2030-02-05' }))).toMatchObject({
+        dataPagament: '2030-02-05',
+      });
+      await expect(amb((c) => pagarLiquidacio(c, nova.id, { dataPagament: '2030-02-06' }))).rejects.toThrow('pagada');
+      await expect(amb((c) => esborrarLiquidacio(c, nova.id))).rejects.toThrow('pagada');
+    });
   });
 });

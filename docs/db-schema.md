@@ -365,7 +365,23 @@ sense, una dotzena part cada mes. `pagaments.import` és la suma de les línies.
 | propietari_id | UUID FK → persones |
 | periode_inici / periode_fi | DATE (`periode_fi >= periode_inici`) |
 | total_cobrat / total_despeses / comissio_agencia / net_a_liquidar | NUMERIC(12,2) |
+| iva_comissio | NUMERIC(12,2) — `023_liquidacions.sql`. IVA (21 %) de la comissió |
+| data_pagament | DATE — `023_liquidacions.sql`. Quan s'ha pagat al propietari; un cop pagada no es pot esborrar |
 | generat_el / created_at | TIMESTAMPTZ |
+
+`net_a_liquidar = total_cobrat − total_despeses − comissio_agencia − iva_comissio`.
+
+**`liquidacio_linies`** (`023_liquidacions.sql`): cada rebut cobrat (`pagament_id`) o despesa
+amb `repercutible_propietari` (`despesa_id`) d'una liquidació, amb `import_total`, el
+`percentatge` de titularitat del propietari i la seva part (`import`). Als rebuts,
+`base_comissio` és la part de renda (les línies `renda` del rebut, o tot el rebut si es va
+crear a mà), i `comissio` i `iva` en surten amb `propietats.comissio_percentatge`. Índexs
+únics `(pagament_id, propietari_id)` i `(despesa_id, propietari_id)`: res es liquida dos cops
+al mateix propietari. Esborrar una liquidació (només si no està pagada) esborra les línies
+en cascada i el contingut torna a quedar per liquidar. Ho genera `generarLiquidacions`
+(`src/lib/db/liquidacions.ts`): rebuts per data de cobrament i despeses per data de despesa.
+
+`propietats.comissio_percentatge` (`023`): comissió de l'agència sobre la renda, sense IVA.
 
 ### 3.13 `incidencies` — 007_incidencies.sql (schema de tenant)
 

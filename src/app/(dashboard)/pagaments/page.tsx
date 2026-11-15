@@ -31,6 +31,9 @@ export default async function PagamentsPage({ searchParams }: PagamentsPageProps
             <Link href="/pagaments/remeses" className={buttonVariants({ variant: 'outline' })}>
               Remeses
             </Link>
+            <Link href="/pagaments/liquidacions" className={buttonVariants({ variant: 'outline' })}>
+              Liquidacions
+            </Link>
             {canWrite && <GenerarRebutsButton />}
           </div>
         }
