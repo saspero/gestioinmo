@@ -31,6 +31,7 @@ export async function crearBdTest(adminUrl: string): Promise<{ url: string; elim
   await client.query(await sql('012_extensions_schema.sql'));
   await client.query(await sql('014_canvi_contrasenya_obligatori.sql'));
   await client.query(await sql('016_programar_pagaments_vencuts.sql'));
+  await client.query(await sql('025_recuperacio_contrasenya.sql'));
   await client.end();
 
   return {

@@ -69,10 +69,10 @@ export async function middleware(request: NextRequest) {
 }
 
 // Protegeix totes les rutes de (dashboard) (arrel inclosa) i app/api/**.
-// Exclou explícitament /login i les rutes de (auth), assets estàtics de Next.js,
+// Exclou explícitament /login, /recuperar i /restablir (rutes de (auth)), assets estàtics de Next.js,
 // favicon i el manifest/robots públics.
 export const config = {
   matcher: [
-    '/((?!login|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
+    '/((?!login|recuperar|restablir|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
   ],
 };

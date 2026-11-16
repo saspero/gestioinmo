@@ -12,6 +12,7 @@ Engineer** i **Auth Specialist** han de llegir aquest document abans d'escriure 
 public.tenants          -- agències registrades (metadades globals)
 public.tenant_users     -- usuaris interns i el seu tenant/rol
 public.tenant_user_sessions -- sessions JWT (revocació/expiració)
+public.tenant_user_password_resets -- enllaços de recuperació de contrasenya (025)
 
 tenant_{uuid}.propietats
 tenant_{uuid}.unitats
@@ -177,6 +178,22 @@ columna, sinó calculats):
 | ip_address | INET | |
 | user_agent | TEXT | |
 | created_at / expires_at / revoked_at | TIMESTAMPTZ | |
+
+Des de la revisió de seguretat, cada petició a l'API o a una pàgina comprova aquí que la
+sessió segueix activa i que l'usuari continua actiu (`sessioVigent`), i en treu el rol.
+
+### 3.3b `public.tenant_user_password_resets` — 025_recuperacio_contrasenya.sql
+
+Enllaços de recuperació de contrasenya per correu. Caduquen als 30 minuts, són d'un sol
+ús i com a molt se'n creen 3 per usuari i hora. Demanar-ne un de nou anul·la els anteriors.
+
+| Camp | Tipus | Notes |
+|---|---|---|
+| id | UUID PK | |
+| tenant_user_id | UUID FK → tenant_users | ON DELETE CASCADE |
+| token_hash | TEXT UNIQUE NOT NULL | SHA-256 del token; el token només viatja al correu |
+| ip_address | INET | Qui l'ha demanat |
+| created_at / expires_at / used_at | TIMESTAMPTZ | `used_at` també es posa en anul·lar-lo |
 
 ### 3.4 `propietats` — 003_propietats.sql (schema de tenant)
 

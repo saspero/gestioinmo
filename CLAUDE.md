@@ -168,6 +168,8 @@ DATABASE_URL_DEV=postgresql://...
 JWT_SECRET=...
 DB_ENCRYPTION_KEY=...
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+RESEND_API_KEY=...   # opcional: sense, els correus van al registre del servidor
+EMAIL_FROM=...       # ex: Gestinmo <no-reply@domini.cat>, d'un domini verificat a Resend
 
 # .env.example (cometre sense valors)
 DATABASE_URL_DEV=
@@ -177,6 +179,8 @@ JWT_SECRET=
 DB_ENCRYPTION_KEY=
 NEXT_PUBLIC_APP_URL=
 VERCEL_ENV=
+RESEND_API_KEY=
+EMAIL_FROM=
 ```
 
 `src/lib/db/pool.ts` tria la URL segons `VERCEL_ENV`: producció usa `DATABASE_URL_PROD` i
@@ -204,8 +208,8 @@ Si estàs llegint aquest fitxer com a agent de Claude Code:
 | Definició d'agents | ✅ Completat |
 | Requirements | ✅ Completat |
 | Arquitectura | ✅ Completat |
-| BDD / Migracions | ✅ Completat (`001`-`024` aplicades a Supabase; `012`, `014` i `016` són globals) |
-| Auth | ✅ Login, logout, sessions, RBAC, alta de tenants, canvi de contrasenya (`/compte`, obligatori amb una contrasenya temporal) i restabliment per l'administrador. Renovació lliscant de la sessió mentre hi ha activitat. Falta: recuperació per correu |
+| BDD / Migracions | ✅ Completat (`001`-`025` aplicades a Supabase; `012`, `014`, `016` i `025` són globals) |
+| Auth | ✅ Login, logout, sessions, RBAC, alta de tenants, canvi de contrasenya (`/compte`, obligatori amb una contrasenya temporal) i restabliment per l'administrador. Recuperació per correu (`/recuperar`, enllaç de 30 minuts d'un sol ús). Renovació lliscant de la sessió mentre hi ha activitat |
 | Mòduls funcionals | ✅ Mòduls 1-8 fets, amb la pestanya Informes (8 informes en pantalla, PDF i CSV). Propietaris i inquilins físics o jurídics. Documents adjunts (fins a 10 MB, xifrats a la BD) a propietats, persones, contractes i incidències. Liquidacions als propietaris (Pagaments › Liquidacions) |
 | Tests | 🟡 `src/lib` cobert (unitaris + integració amb PostgreSQL real). Falten components i route handlers |
 | Deploy | ✅ Producció a Vercel, cada merge a `main` desplega |
