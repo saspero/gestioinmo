@@ -32,3 +32,22 @@ export const canviContrasenyaSchema = z
   });
 
 export type CanviContrasenyaInput = z.infer<typeof canviContrasenyaSchema>;
+
+export const sollicitarRecuperacioSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Introdueix un email vàlid.'),
+});
+
+export const restablirContrasenyaSchema = z
+  .object({
+    token: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "L'enllaç no és vàlid."),
+    nova: z
+      .string()
+      .min(LONGITUD_MINIMA_CONTRASENYA, `Ha de tenir com a mínim ${LONGITUD_MINIMA_CONTRASENYA} caràcters.`)
+      .refine((valor) => new TextEncoder().encode(valor).length <= MAX_BYTES_BCRYPT, 'És massa llarga.'),
+    confirmacio: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.nova !== data.confirmacio) {
+      ctx.addIssue({ code: 'custom', path: ['confirmacio'], message: 'Les contrasenyes no coincideixen.' });
+    }
+  });

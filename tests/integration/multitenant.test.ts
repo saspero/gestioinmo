@@ -17,6 +17,7 @@ import {
   revokeSession,
   sessioVigent,
 } from '@/lib/auth/session';
+import { restablirAmbToken, sollicitarRecuperacio, tokenRecuperacioVigent } from '@/lib/auth/recuperacio';
 import { withTenantContext } from '@/lib/auth/tenant-context';
 import { verifyToken } from '@/lib/auth/jwt';
 import { getDomainPool } from '@/lib/db/pool';
@@ -348,6 +349,57 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
       expect(await login('off@test.cat', 'incorrecta')).toEqual({ ok: false, reason: 'invalid_credentials' });
       expect(await obtenirContextUsuari(tenantA, id)).toBeNull();
     });
+
+    it('recupera la contrasenya amb un enllaç d’un sol ús que desbloqueja el compte i tanca les sessions', async () => {
+      await crearUsuari(tenantA, { email: 'oblit@test.cat', nom: 'Oblit', rol: 'gestor' }, await hashDe('a@test.cat'));
+      const id = await idUsuari('oblit@test.cat');
+      const sessio = await login('oblit@test.cat', PASSWORD);
+      if (!sessio.ok) throw new Error('El login de preparació ha fallat.');
+      for (let i = 0; i < 5; i += 1) await login('oblit@test.cat', 'incorrecta');
+
+      expect(await sollicitarRecuperacio('ningu@test.cat')).toBeNull();
+      const primera = await sollicitarRecuperacio('oblit@test.cat');
+      const sollicitud = await sollicitarRecuperacio('oblit@test.cat');
+      if (!primera || !sollicitud) throw new Error("No s'ha creat l'enllaç.");
+      expect(sollicitud).toMatchObject({ email: 'oblit@test.cat', nom: 'Oblit' });
+
+      // A la BD només hi ha el hash, i el primer enllaç ja no val.
+      const { rows } = await getDomainPool().query(
+        'SELECT 1 FROM public.tenant_user_password_resets WHERE token_hash = $1',
+        [sollicitud.token]
+      );
+      expect(rows).toEqual([]);
+      expect(await tokenRecuperacioVigent(primera.token)).toBe(false);
+      expect(await tokenRecuperacioVigent(sollicitud.token)).toBe(true);
+
+      expect(await restablirAmbToken(sollicitud.token, 'una-contrasenya-nova')).toBe(true);
+      expect(await restablirAmbToken(sollicitud.token, 'una-altra-de-nova')).toBe(false);
+      expect(await isSessionActive(sessio.payload.jti)).toBe(false);
+      expect(await login('oblit@test.cat', 'una-contrasenya-nova')).toMatchObject({ ok: true });
+
+      // Màxim 3 enllaços per hora: el següent ja no es crea.
+      expect(await sollicitarRecuperacio('oblit@test.cat')).not.toBeNull();
+      expect(await sollicitarRecuperacio('oblit@test.cat')).toBeNull();
+      expect(id).toBeTruthy();
+    }, 30_000);
+
+    it('no deixa fer servir un enllaç caducat ni el d’un usuari desactivat', async () => {
+      await crearUsuari(tenantA, { email: 'caducat@test.cat', nom: 'Caducat', rol: 'gestor' }, await hashDe('a@test.cat'));
+      const id = await idUsuari('caducat@test.cat');
+      const caducat = await sollicitarRecuperacio('caducat@test.cat');
+      if (!caducat) throw new Error("No s'ha creat l'enllaç.");
+      await getDomainPool().query(
+        "UPDATE public.tenant_user_password_resets SET expires_at = now() - interval '1 minute' WHERE tenant_user_id = $1",
+        [id]
+      );
+      expect(await restablirAmbToken(caducat.token, 'una-contrasenya-nova')).toBe(false);
+
+      const vigent = await sollicitarRecuperacio('caducat@test.cat');
+      if (!vigent) throw new Error("No s'ha creat l'enllaç.");
+      expect(await canviarEstatUsuari(tenantA, id, false)).toBe(true);
+      expect(await restablirAmbToken(vigent.token, 'una-contrasenya-nova')).toBe(false);
+      expect(await sollicitarRecuperacio('caducat@test.cat')).toBeNull();
+    }, 30_000);
 
     it('revoca totes les sessions d’un usuari', async () => {
       const { token } = await createSession({ id: sessioB.sub, tenantId: tenantB, rol: 'admin' }, {}, 60);
