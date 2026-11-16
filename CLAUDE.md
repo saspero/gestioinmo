@@ -30,7 +30,7 @@ Portal de gestió immobiliària multitenant. Aquest fitxer és el punt d'entrada
 | Deploy | Vercel |
 | CI/CD | GitHub Actions |
 
-**Multitenancy:** esquema-per-tenant a PostgreSQL. Cada agència té el seu propi schema (`tenant_{id}`). RLS actiu a Supabase però tot l'accés passa pel driver `pg` directe amb credencials de servei.
+**Multitenancy:** esquema-per-tenant a PostgreSQL. Cada agència té el seu propi schema (`tenant_{id}`). RLS actiu a totes les taules però tot l'accés passa pel driver `pg` directe amb credencials de servei. L'API pública de Supabase (Data API) està desactivada i `anon`/`authenticated` no tenen cap permís: no la tornis a activar. Les taules de l'app antiga són a l'schema `arxiu_antic`.
 
 ---
 
@@ -204,7 +204,7 @@ Si estàs llegint aquest fitxer com a agent de Claude Code:
 | Definició d'agents | ✅ Completat |
 | Requirements | ✅ Completat |
 | Arquitectura | ✅ Completat |
-| BDD / Migracions | ✅ Completat (`001`-`023` aplicades a Supabase; `012`, `014` i `016` són globals) |
+| BDD / Migracions | ✅ Completat (`001`-`024` aplicades a Supabase; `012`, `014` i `016` són globals) |
 | Auth | ✅ Login, logout, sessions, RBAC, alta de tenants, canvi de contrasenya (`/compte`, obligatori amb una contrasenya temporal) i restabliment per l'administrador. Renovació lliscant de la sessió mentre hi ha activitat. Falta: recuperació per correu |
 | Mòduls funcionals | ✅ Mòduls 1-8 fets, amb la pestanya Informes (8 informes en pantalla, PDF i CSV). Propietaris i inquilins físics o jurídics. Documents adjunts (fins a 10 MB, xifrats a la BD) a propietats, persones, contractes i incidències. Liquidacions als propietaris (Pagaments › Liquidacions) |
 | Tests | 🟡 `src/lib` cobert (unitaris + integració amb PostgreSQL real). Falten components i route handlers |

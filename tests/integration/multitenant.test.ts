@@ -302,6 +302,15 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
     ).rejects.toThrow(/100/);
   });
 
+  it("activa RLS a totes les taules de l'schema del tenant", async () => {
+    const { rows } = await getDomainPool().query<{ relname: string }>(
+      `SELECT c.relname FROM pg_class c
+        WHERE c.relnamespace = $1::regnamespace AND c.relkind = 'r' AND NOT c.relrowsecurity`,
+      [`tenant_${tenantA}`]
+    );
+    expect(rows).toEqual([]);
+  });
+
   describe('login', () => {
     it('accepta les credencials correctes i registra la sessió', async () => {
       const result = await login('b@test.cat', PASSWORD, { ipAddress: '127.0.0.1', userAgent: 'vitest' });
