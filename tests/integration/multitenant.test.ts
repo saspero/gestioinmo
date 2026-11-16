@@ -15,6 +15,7 @@ import {
   renovarSessio,
   revokeAllSessions,
   revokeSession,
+  sessioVigent,
 } from '@/lib/auth/session';
 import { withTenantContext } from '@/lib/auth/tenant-context';
 import { verifyToken } from '@/lib/auth/jwt';
@@ -308,9 +309,14 @@ describe.skipIf(!adminUrl)('multitenancy amb PostgreSQL real', () => {
       if (!result.ok) return;
       expect(result.payload.tenant_id).toBe(tenantB);
       expect(await isSessionActive(result.payload.jti)).toBe(true);
+      expect(await sessioVigent(result.payload)).toEqual({ rol: result.payload.rol });
+      // Un JWT amb un altre tenant no casa amb la sessió encara que el jti sigui bo.
+      expect(await sessioVigent({ ...result.payload, tenant_id: tenantA })).toBeNull();
 
       await revokeSession(result.payload.jti);
       expect(await isSessionActive(result.payload.jti)).toBe(false);
+      // Amb la sessió tancada, el JWT (encara no caducat) ja no serveix per a l'API.
+      expect(await sessioVigent(result.payload)).toBeNull();
     });
 
     it("no distingeix un usuari inexistent d'una contrasenya incorrecta", async () => {
