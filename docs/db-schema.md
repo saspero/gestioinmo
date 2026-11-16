@@ -510,6 +510,7 @@ actiu en el moment de la migració), no hi ha una única còpia global.
 | `trg_sync_estat_unitat` | 005 | 3.2 — l'estat "ocupat" es deriva de l'existència d'un contracte actiu |
 | `registra_auditoria()` + triggers a 008 | 008 | RNF — auditoria: usuari, timestamp i valor anterior a cada modificació |
 | `tenant_isolation` (RLS) | 010 | RNF — multitenancy: aïllament total de dades entre agències |
+| RLS a totes les taules del tenant, sense polítiques | 024 | Defensa en profunditat: tot denegat per a `anon`/`authenticated`; l'app es connecta amb el rol propietari |
 | Totes les taules de domini amb `deleted_at` | 003–007 | Convenció: mai `DELETE` físic en entitats de domini |
 
 ---

@@ -36,7 +36,7 @@ export const TIPUS_DOCUMENT_PERMESOS: Record<string, readonly string[]> = {
 
 /** Tipus del fitxer: el que diu el navegador si és acceptat; si no, el de l'extensió. */
 export function tipusDocument(nom: string, tipusNavegador: string): string | undefined {
-  if (tipusNavegador in TIPUS_DOCUMENT_PERMESOS) return tipusNavegador;
+  if (Object.hasOwn(TIPUS_DOCUMENT_PERMESOS, tipusNavegador)) return tipusNavegador;
   const extensio = nom.split('.').pop()?.toLowerCase() ?? '';
   return Object.keys(TIPUS_DOCUMENT_PERMESOS).find((mime) => TIPUS_DOCUMENT_PERMESOS[mime].includes(extensio));
 }
@@ -47,7 +47,7 @@ export const crearDocumentSchema = z.object({
   nom: z.string().trim().min(1, 'El nom del fitxer és obligatori').max(255, 'El nom del fitxer és massa llarg'),
   mime: z
     .string()
-    .refine((mime) => mime in TIPUS_DOCUMENT_PERMESOS, 'Tipus de fitxer no admès. Puja un PDF, una imatge o un document de text o full de càlcul.'),
+    .refine((mime) => Object.hasOwn(TIPUS_DOCUMENT_PERMESOS, mime), 'Tipus de fitxer no admès. Puja un PDF, una imatge o un document de text o full de càlcul.'),
   mida: z
     .number()
     .int()

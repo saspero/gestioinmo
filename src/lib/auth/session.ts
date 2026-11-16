@@ -318,6 +318,33 @@ export async function renovarSessio(payload: JwtPayload): Promise<{ token: strin
 }
 
 /**
+ * Comprova a la BD que la sessió del JWT continua vigent (ni revocada ni caducada) i que
+ * l'usuari segueix actiu, i en retorna el rol actual. Així tancar la sessió, desactivar un
+ * usuari o restablir-li la contrasenya talla l'accés de seguida, encara que algú tingui
+ * la cookie, i un canvi de rol s'aplica a la petició següent.
+ *
+ * Retorna `null` si la sessió ja no val.
+ */
+export async function sessioVigent(
+  payload: Pick<JwtPayload, 'jti' | 'sub' | 'tenant_id'>
+): Promise<{ rol: RolUsuari } | null> {
+  const { rows } = await getAuthPool().query<{ rol: RolUsuari }>(
+    `SELECT tu.rol
+       FROM public.tenant_user_sessions s
+       JOIN public.tenant_users tu ON tu.id = s.tenant_user_id
+      WHERE s.token_jti = $1
+        AND tu.id = $2
+        AND tu.tenant_id = $3
+        AND s.revoked_at IS NULL
+        AND s.expires_at > now()
+        AND tu.actiu
+        AND tu.deleted_at IS NULL`,
+    [payload.jti, payload.sub, payload.tenant_id]
+  );
+  return rows[0] ?? null;
+}
+
+/**
  * Consulta si una sessió segueix activa a `tenant_user_sessions` (ni revocada ni
  * expirada). El middleware d'Edge Runtime confia en l'`exp` del JWT per a la majoria de
  * peticions; aquesta funció es reserva per a operacions sensibles que criden

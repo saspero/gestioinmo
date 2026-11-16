@@ -20,6 +20,9 @@ describe('documents', () => {
     );
     expect(tipusDocument('pagina.html', 'text/html')).toBeUndefined();
     expect(tipusDocument('logo.svg', 'image/svg+xml')).toBeUndefined();
+    // Noms heretats de l'objecte JavaScript no són tipus acceptats.
+    expect(tipusDocument('x.bin', 'toString')).toBeUndefined();
+    expect(tipusDocument('x.bin', '__proto__')).toBeUndefined();
   });
 
   it('parteix el fitxer en trossos que sumen la mida exacta', () => {

@@ -11,7 +11,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { verifyToken, type JwtPayload } from '@/lib/auth/jwt';
-import { AUTH_COOKIE_NAME } from '@/lib/auth/session';
+import { AUTH_COOKIE_NAME, sessioVigent } from '@/lib/auth/session';
 import { can, type Modul, type Accio } from '@/lib/auth/rbac';
 
 /** Verifica el JWT de la cookie de sessió. Redirigeix a `/login` si absent/invàlid —
@@ -24,7 +24,13 @@ export const getDashboardSession = cache(async (): Promise<JwtPayload> => {
   if (!payload) {
     redirect('/login');
   }
-  return payload;
+  // Sessió tancada o usuari desactivat: la cookie encara té un JWT vàlid, per això
+  // `sessio=invalida` evita que el login el torni a enviar aquí.
+  const vigent = await sessioVigent(payload);
+  if (!vigent) {
+    redirect('/login?sessio=invalida');
+  }
+  return { ...payload, rol: vigent.rol };
 });
 
 export type ModuleAccess = { payload: JwtPayload; allowed: boolean };

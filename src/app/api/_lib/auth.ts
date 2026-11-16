@@ -5,7 +5,7 @@
 
 import type { NextRequest } from 'next/server';
 import { verifyToken, type JwtPayload } from '../../../lib/auth/jwt';
-import { AUTH_COOKIE_NAME } from '../../../lib/auth/session';
+import { AUTH_COOKIE_NAME, sessioVigent } from '../../../lib/auth/session';
 import { can, type Modul, type Accio } from '../../../lib/auth/rbac';
 import { apiError } from '../../../lib/errors';
 
@@ -21,7 +21,12 @@ export async function authenticate(request: NextRequest): Promise<AuthResult> {
   if (!payload) {
     return { ok: false, response: apiError('UNAUTHORIZED', 'Sessió no vàlida o expirada.') };
   }
-  return { ok: true, payload };
+  // Una cookie robada no ha de valer després de tancar la sessió o desactivar l'usuari.
+  const vigent = await sessioVigent(payload);
+  if (!vigent) {
+    return { ok: false, response: apiError('UNAUTHORIZED', 'Sessió no vàlida o expirada.') };
+  }
+  return { ok: true, payload: { ...payload, rol: vigent.rol } };
 }
 
 /** `authenticate` + comprovació RBAC (`can()`) — AGENT_API.md §7: GET requereix
